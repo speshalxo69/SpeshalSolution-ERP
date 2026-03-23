@@ -15,6 +15,10 @@
             padding: 20px;
         }
 
+        @media (max-width: 600px) {
+            body { padding: 6px; font-size: 12px; }
+        }
+
         /* ── RTL Support ── */
         body.rtl { direction: rtl; }
         body.rtl .menu-bar-left { flex-direction: row-reverse; }
@@ -379,6 +383,79 @@
         .card-var-label { font-weight: bold; color: #000080; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
         .card-var-price { color: #606060; white-space: nowrap; }
         .card-var-more  { font-size: 9px; color: #808080; margin-top: 1px; }
+
+        /* ══════════════════════════════════════════
+           RESPONSIVE — tablet & mobile
+        ══════════════════════════════════════════ */
+
+        /* Tablet: side-by-side still but narrower left panel */
+        @media (max-width: 900px) {
+            .left-panel { width: 280px; }
+        }
+
+        /* Mobile: stack layout */
+        @media (max-width: 640px) {
+            .content-area {
+                flex-direction: column;
+                padding: 4px;
+                gap: 4px;
+            }
+            .left-panel  { width: 100%; }
+            .right-panel { width: 100%; }
+
+            /* Taller gallery on mobile so you can scroll */
+            .gallery-scroll { height: 360px; }
+
+            /* Gallery 2-column grid on mobile */
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+
+            /* Bigger card images */
+            .product-card img { height: 120px; }
+
+            /* Menu bar: wrap to two lines */
+            .menu-bar { flex-wrap: wrap; gap: 2px; padding: 3px 4px; }
+            .menu-bar-left  { order: 1; }
+            .menu-bar-right { order: 2; flex-wrap: wrap; }
+
+            /* Bigger touch targets for card buttons */
+            .card-btn { padding: 5px 0; font-size: 11px; }
+
+            /* Bigger form inputs */
+            input[type="text"], input[type="number"], textarea {
+                font-size: 13px; padding: 4px 6px;
+            }
+            label { font-size: 12px; }
+
+            /* Login dialog: full width with margin */
+            .login-dialog { width: calc(100vw - 24px); max-width: 360px; }
+
+            /* Edit modal: full width */
+            #edit-overlay > .login-dialog { width: calc(100vw - 24px); max-width: 400px; }
+
+            /* Variations table: readable on small screens */
+            .var-table { font-size: 11px; }
+            .var-table input[type="text"],
+            .var-table input[type="number"] { font-size: 11px; height: 22px; }
+
+            /* Drop zone: slightly shorter */
+            .drop-zone { min-height: 90px; }
+
+            /* Btn row: full-width buttons */
+            .btn-row { gap: 4px; }
+            .btn { flex: 1; min-width: 0; padding: 7px 8px; font-size: 12px; }
+
+            /* Status bar: hide version on tiny screens, keep status + db */
+            .status-item:nth-child(2) { display: none; }
+
+            /* Title bar text: slightly smaller */
+            .title-bar-left { font-size: 11px; }
+        }
+
+        /* Very small phones */
+        @media (max-width: 400px) {
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+            .menu-bar-left { display: none; } /* hide File/Edit/View/Help on tiny screens */
+        }
     </style>
 </head>
 <body>
