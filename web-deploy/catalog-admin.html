@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speshal ERP Solution</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: #008080;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 11px;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ── RTL Support ── */
+        body.rtl { direction: rtl; }
+        body.rtl .menu-bar-left { flex-direction: row-reverse; }
+        body.rtl .menu-bar-right { flex-direction: row-reverse; }
+        body.rtl .btn-row { flex-direction: row-reverse; }
+        body.rtl .login-btn-row { flex-direction: row-reverse; }
+        body.rtl .field-row { flex-direction: row-reverse; }
+
+        /* ── Login Screen ── */
+        #login-screen {
+            position: fixed; inset: 0; background: #008080;
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        #login-screen.hidden { display: none; }
+
+        .login-dialog {
+            background: #d4d0c8;
+            border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+            border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+            width: 320px;
+        }
+
+        .login-title-bar {
+            background: linear-gradient(to right, #0a2486, #1b8fcb 50%, #3aaade);
+            padding: 3px 4px 3px 6px;
+            display: flex; align-items: center; justify-content: space-between;
+            user-select: none;
+        }
+        .login-title-bar span {
+            color: #ffffff; font-size: 12px; font-weight: bold;
+            text-shadow: 1px 1px 0 #00003a;
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        .login-body { padding: 20px 16px 16px; text-align: center; }
+        .login-app-icon { font-size: 36px; display: block; margin-bottom: 10px; }
+        .login-title { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+        .login-subtitle { font-size: 11px; color: #444444; margin-bottom: 16px; line-height: 1.5; }
+        .login-divider { border: none; border-top: 1px solid #808080; border-bottom: 1px solid #ffffff; margin: 0 0 14px; }
+
+        .login-field { text-align: left; margin-bottom: 6px; }
+        .login-field label { display: block; margin-bottom: 2px; font-size: 11px; }
+        .login-field input {
+            width: 100%;
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+            background: #ffffff; font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 11px; padding: 3px 4px; outline: none;
+        }
+        .login-field input:focus { border-color: #000080; }
+
+        .login-error { color: #cc0000; font-size: 10px; margin-top: 6px; min-height: 14px; text-align: left; }
+        .login-btn-row { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 8px; border-top: 1px solid #808080; }
+
+        #btn-login {
+            background: #d4d0c8;
+            border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+            border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 11px; padding: 4px 24px; cursor: pointer; color: #000000; min-width: 80px;
+        }
+        #btn-login:active {
+            border-top: 2px solid #404040; border-left: 2px solid #404040;
+            border-right: 2px solid #ffffff; border-bottom: 2px solid #ffffff;
+            padding: 5px 23px 3px 25px;
+        }
+        #btn-login:disabled { color: #808080; cursor: default; }
+
+        /* ── Window Chrome ── */
+        #main-window { display: none; }
+        .window {
+            background: #d4d0c8;
+            border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+            border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+            max-width: 1120px; margin: 0 auto;
+        }
+
+        .title-bar {
+            background: linear-gradient(to right, #0a2486, #1b8fcb 50%, #3aaade);
+            padding: 3px 4px 3px 6px;
+            display: flex; align-items: center; justify-content: space-between;
+            user-select: none;
+        }
+        .title-bar-left {
+            display: flex; align-items: center; gap: 5px;
+            color: #ffffff; font-size: 12px; font-weight: bold;
+            text-shadow: 1px 1px 0 #00003a;
+        }
+        .title-buttons { display: flex; gap: 2px; }
+        .title-btn {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #404040; border-bottom: 1px solid #404040;
+            width: 21px; height: 21px; font-size: 11px;
+            font-family: Marlett, Tahoma, Arial, sans-serif;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            padding: 0; line-height: 1;
+        }
+        .title-btn:active {
+            border-top: 1px solid #404040; border-left: 1px solid #404040;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+        }
+
+        /* ── Menu Bar ── */
+        .menu-bar {
+            background: #d4d0c8; border-bottom: 1px solid #808080;
+            padding: 2px 2px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .menu-bar-left { display: flex; }
+        .menu-item { padding: 2px 8px; cursor: default; font-size: 11px; }
+        .menu-item:hover { background: #000080; color: #ffffff; }
+
+        .menu-bar-right { display: flex; align-items: center; gap: 6px; padding-right: 4px; }
+
+        .user-badge { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #444444; }
+        .user-avatar { width: 16px; height: 16px; border: 1px solid #808080; object-fit: cover; }
+
+        #btn-signout {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #404040; border-bottom: 1px solid #404040;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 10px; padding: 1px 8px; cursor: pointer; color: #000000;
+        }
+        #btn-signout:active {
+            border-top: 1px solid #404040; border-left: 1px solid #404040;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+        }
+
+        /* ── Language Switcher ── */
+        .lang-switcher { display: flex; gap: 2px; }
+        .lang-btn {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #404040; border-bottom: 1px solid #404040;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 10px; padding: 1px 6px; cursor: pointer; color: #000000;
+        }
+        .lang-btn.active {
+            border-top: 1px solid #404040; border-left: 1px solid #404040;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+            background: #c0bdb5;
+        }
+        .lang-btn:hover:not(.active) { background: #c8c4bc; }
+
+        /* ── Layout ── */
+        .content-area { display: flex; gap: 6px; padding: 6px; }
+        .left-panel  { width: 340px; flex-shrink: 0; }
+        .right-panel { flex: 1; min-width: 0; }
+
+        .panel {
+            background: #d4d0c8;
+            border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+            border-right: 2px solid #808080; border-bottom: 2px solid #808080;
+            padding: 8px;
+        }
+        .groupbox {
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+            padding: 8px; margin-bottom: 6px;
+        }
+        .section-label {
+            font-weight: bold; font-size: 11px; margin-bottom: 6px;
+            padding-bottom: 3px; border-bottom: 1px solid #808080; color: #000000;
+        }
+
+        /* ── Drop Zone ── */
+        .drop-zone {
+            border: 2px dashed #808080; background: #ffffff;
+            min-height: 130px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            cursor: pointer; margin-bottom: 8px; position: relative; overflow: hidden;
+        }
+        .drop-zone.dragover { background: #c8d8f0; border-color: #000080; border-style: solid; }
+        .drop-hint { color: #808080; text-align: center; pointer-events: none; padding: 8px; line-height: 1.6; }
+        .drop-hint .icon { font-size: 28px; display: block; margin-bottom: 4px; }
+        .drop-hint .sub  { font-size: 10px; color: #aaaaaa; }
+        .drop-zone img { max-width: 100%; max-height: 200px; display: block; object-fit: contain; }
+        #file-input { display: none; }
+
+        /* ── Form Fields ── */
+        .field-group { margin-bottom: 5px; }
+        label { display: block; margin-bottom: 2px; font-size: 11px; }
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+            background: #ffffff; font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 11px; padding: 2px 4px; outline: none;
+        }
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus { border-color: #000080; }
+        textarea { resize: vertical; height: 58px; }
+        .field-row { display: flex; gap: 6px; }
+        .field-row .field-group { flex: 1; min-width: 0; }
+
+        /* ── Buttons ── */
+        .btn {
+            background: #d4d0c8;
+            border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+            border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 11px; padding: 4px 16px; cursor: pointer; min-width: 80px; color: #000000;
+        }
+        .btn:active {
+            border-top: 2px solid #404040; border-left: 2px solid #404040;
+            border-right: 2px solid #ffffff; border-bottom: 2px solid #ffffff;
+            padding: 5px 15px 3px 17px;
+        }
+        .btn:disabled { color: #808080; cursor: default; }
+        .btn:focus { outline: 1px dotted #000000; outline-offset: -4px; }
+        .btn-row {
+            display: flex; justify-content: flex-end; gap: 6px;
+            padding-top: 6px; border-top: 1px solid #808080; margin-top: 6px;
+        }
+
+        /* ── Progress Bar ── */
+        .progress-wrap {
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+            height: 16px; background: #d4d0c8; margin-top: 6px; display: none; overflow: hidden;
+        }
+        .progress-fill { height: 100%; background: #000080; width: 0%; }
+
+        /* ── Message Box ── */
+        .msg-box { display: none; padding: 4px 6px; margin-top: 4px; font-size: 11px; border: 1px solid #808080; }
+        .msg-box.error   { color: #cc0000; background: #fff8f8; }
+        .msg-box.success { color: #006600; background: #f8fff8; }
+        .msg-box.info    { color: #000080; background: #f8f8ff; }
+
+        /* ── Gallery ── */
+        .gallery-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #808080;
+        }
+        .gallery-header .section-label { margin: 0; border: none; padding: 0; }
+        #product-count { font-weight: normal; color: #808080; font-size: 10px; }
+
+        .gallery-scroll {
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+            background: #ffffff; padding: 4px; overflow-y: auto; height: 540px;
+        }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+        .gallery-empty { grid-column: 1 / -1; color: #808080; padding: 24px; text-align: center; }
+
+        /* ── Product Cards ── */
+        .product-card {
+            border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+            border-right: 2px solid #808080; border-bottom: 2px solid #808080;
+            background: #d4d0c8; cursor: default; overflow: hidden;
+        }
+        .product-card:hover { border-top: 2px solid #000080; border-left: 2px solid #000080; }
+        .product-card img { width: 100%; height: 110px; object-fit: cover; display: block; border-bottom: 1px solid #808080; background: #c0c0c0; }
+        .card-info { padding: 5px; }
+        .card-name { font-weight: bold; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-sku  { font-size: 10px; color: #808080; margin-top: 1px; }
+        .card-ws   { font-size: 11px; color: #000080; font-weight: bold; margin-top: 2px; }
+        .card-moq  { font-size: 10px; color: #606060; margin-top: 1px; }
+        .card-btns { display: flex; gap: 3px; margin-top: 5px; }
+        .card-btn {
+            flex: 1;
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+            font-family: Tahoma, Arial, sans-serif; font-size: 10px;
+            padding: 2px 0; cursor: pointer; text-align: center;
+        }
+        .card-btn:active {
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+        }
+        .card-btn-delete { color: #990000; }
+
+        /* ── Status Bar ── */
+        .status-bar { border-top: 1px solid #808080; padding: 2px 4px; display: flex; gap: 4px; }
+        .status-item {
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+            padding: 1px 6px; font-size: 11px;
+        }
+        .status-item.grow { flex: 1; }
+
+        /* ── Scrollbar ── */
+        .gallery-scroll::-webkit-scrollbar { width: 17px; }
+        .gallery-scroll::-webkit-scrollbar-track { background: #d4d0c8; }
+        .gallery-scroll::-webkit-scrollbar-thumb {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+        }
+        .gallery-scroll::-webkit-scrollbar-button:single-button {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+            height: 17px;
+        }
+
+        /* ── Form Mode Tabs ── */
+        .form-mode-tabs { display: flex; margin-bottom: 6px; gap: 0; }
+        .mode-tab {
+            flex: 1; padding: 3px 6px; font-size: 11px; cursor: pointer; text-align: center;
+            background: #d4d0c8; color: #000000;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+        }
+        .mode-tab.active {
+            background: #c0bdb5; font-weight: bold;
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+        }
+        .mode-tab:hover:not(.active) { background: #c8c4bc; }
+
+        /* ── Variations Table ── */
+        .var-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 4px; table-layout: fixed; }
+        .var-table th {
+            background: #c0bdb5; text-align: left; padding: 2px 3px;
+            border: 1px solid #808080; font-size: 10px; white-space: nowrap; overflow: hidden;
+        }
+        .var-table td { padding: 1px; border: 1px solid #c8c8c8; vertical-align: middle; }
+        .var-table col.col-label  { width: 26%; }
+        .var-table col.col-sku    { width: 18%; }
+        .var-table col.col-ws     { width: 18%; }
+        .var-table col.col-retail { width: 18%; }
+        .var-table col.col-moq    { width: 12%; }
+        .var-table col.col-rm     { width: 8%;  }
+        .var-table input[type="text"], .var-table input[type="number"] {
+            width: 100%; border: none; background: #ffffff;
+            font-family: Tahoma, Arial, sans-serif; font-size: 10px;
+            padding: 1px 2px; outline: none; height: 17px; box-sizing: border-box;
+        }
+        .var-table input:focus { outline: 1px solid #000080; }
+        .var-remove-btn {
+            display: block; width: 100%; background: #d4d0c8; border: none;
+            font-size: 11px; cursor: pointer; text-align: center; line-height: 17px;
+            color: #990000; font-family: Tahoma, Arial, sans-serif; padding: 0;
+        }
+        .var-remove-btn:hover { background: #ffcccc; }
+        .btn-add-row {
+            background: #d4d0c8;
+            border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+            border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+            font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+            font-size: 10px; padding: 2px 8px; cursor: pointer; margin-top: 3px; color: #000000;
+        }
+        .btn-add-row:active {
+            border-top: 1px solid #808080; border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+        }
+        .var-empty-row td {
+            text-align: center; color: #808080; padding: 4px; font-style: italic; font-size: 10px;
+        }
+
+        /* ── Variations on card ── */
+        .card-var-badge {
+            display: inline-block; background: #000080; color: #ffffff;
+            font-size: 9px; padding: 0 4px; margin-bottom: 3px; letter-spacing: 0.5px;
+        }
+        .card-variations { font-size: 10px; margin-top: 1px; }
+        .card-var-row { display: flex; justify-content: space-between; padding: 1px 0; border-bottom: 1px dotted #c8c8c8; }
+        .card-var-row:last-child { border-bottom: none; }
+        .card-var-label { font-weight: bold; color: #000080; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
+        .card-var-price { color: #606060; white-space: nowrap; }
+        .card-var-more  { font-size: 9px; color: #808080; margin-top: 1px; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+    <div class="login-dialog">
+        <div class="login-title-bar">
+            <span id="t-login-titlebar">🛒 Speshal ERP Solution — Sign In</span>
+        </div>
+        <div class="login-body">
+            <span class="login-app-icon">🔐</span>
+            <div class="login-title" id="t-login-title">ERP System — Administrator Login</div>
+            <div class="login-subtitle" id="t-login-subtitle">Enter your credentials to continue.</div>
+            <hr class="login-divider">
+            <div class="login-field">
+                <label for="login-username" id="t-label-username">Username:</label>
+                <input type="text" id="login-username" autocomplete="username" spellcheck="false">
+            </div>
+            <div class="login-field">
+                <label for="login-password" id="t-label-password">Password:</label>
+                <input type="password" id="login-password" autocomplete="current-password">
+            </div>
+            <div class="login-error" id="login-error"></div>
+            <div class="login-btn-row">
+                <button id="btn-login">Log In</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- MAIN WINDOW -->
+<div class="window" id="main-window">
+
+    <div class="title-bar">
+        <div class="title-bar-left">
+            <span>🛒</span>
+            Speshal ERP Solution
+        </div>
+        <div class="title-buttons">
+            <button class="title-btn" title="Minimize">&#x2014;</button>
+            <button class="title-btn" title="Maximize">&#x25A1;</button>
+            <button class="title-btn" title="Close">&#x2715;</button>
+        </div>
+    </div>
+
+    <div class="menu-bar">
+        <div class="menu-bar-left">
+            <span class="menu-item">File</span>
+            <span class="menu-item">Edit</span>
+            <span class="menu-item">View</span>
+            <span class="menu-item">Help</span>
+        </div>
+        <div class="menu-bar-right">
+            <div class="lang-switcher">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <button class="lang-btn" data-lang="fr">FR</button>
+                <button class="lang-btn" data-lang="ar">AR</button>
+            </div>
+            <div class="user-badge">
+                <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none;">
+                <span id="user-name">—</span>
+            </div>
+            <button id="btn-signout">Sign Out</button>
+        </div>
+    </div>
+
+    <div class="content-area">
+
+        <!-- LEFT: Form -->
+        <div class="left-panel">
+            <div class="panel">
+
+                <div class="section-label" id="t-section-add">📋 Add New Product</div>
+
+                <div class="form-mode-tabs">
+                    <button class="mode-tab active" id="tab-simple" data-mode="simple">📋 Simple</button>
+                    <button class="mode-tab" id="tab-variations" data-mode="variations">📦 Variations</button>
+                </div>
+
+                <div class="drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept="image/*">
+                    <div class="drop-hint" id="drop-hint">
+                        <span class="icon">🖼</span>
+                        <span id="t-drag-drop">Drag &amp; Drop product image here</span><br>
+                        <span class="sub" id="t-or-browse">— or click to browse —</span>
+                    </div>
+                </div>
+
+                <div class="groupbox">
+                    <div class="field-group">
+                        <label for="f-name" id="t-label-name">Product Name:</label>
+                        <input type="text" id="f-name" maxlength="120">
+                    </div>
+
+                    <!-- Simple mode fields -->
+                    <div id="simple-fields">
+                        <div class="field-group">
+                            <label for="f-sku" id="t-label-sku">SKU:</label>
+                            <input type="text" id="f-sku" maxlength="60">
+                        </div>
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label for="f-ws" id="t-label-ws">Wholesale Price (DA):</label>
+                                <input type="number" id="f-ws" min="0" step="1">
+                            </div>
+                            <div class="field-group">
+                                <label for="f-retail" id="t-label-retail">Retail Price (DA):</label>
+                                <input type="number" id="f-retail" min="0" step="1">
+                            </div>
+                        </div>
+                        <div class="field-group">
+                            <label for="f-moq" id="t-label-moq">MOQ (Min. Order Qty):</label>
+                            <input type="number" id="f-moq" min="1" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Variations mode fields -->
+                    <div id="variations-fields" style="display:none">
+                        <table class="var-table" id="var-table">
+                            <colgroup>
+                                <col class="col-label"><col class="col-sku">
+                                <col class="col-ws"><col class="col-retail">
+                                <col class="col-moq"><col class="col-rm">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th id="t-var-col-label">Label</th>
+                                    <th id="t-var-col-sku">SKU</th>
+                                    <th id="t-var-col-ws">WS</th>
+                                    <th id="t-var-col-retail">Retail</th>
+                                    <th id="t-var-col-moq">MOQ</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="var-body"></tbody>
+                        </table>
+                        <button type="button" class="btn-add-row" id="btn-add-row">＋ Add Row</button>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="f-desc" id="t-label-desc">Description:</label>
+                        <textarea id="f-desc"></textarea>
+                    </div>
+                </div>
+
+                <div class="progress-wrap" id="progress-wrap">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="msg-box" id="msg-box"></div>
+                <div class="btn-row">
+                    <button class="btn" id="btn-clear">Clear</button>
+                    <button class="btn" id="btn-save">💾 Save to Cloud</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT: Gallery -->
+        <div class="right-panel">
+            <div class="panel" style="height:100%;">
+                <div class="gallery-header">
+                    <span class="section-label" id="t-section-db">🗄 Live Database</span>
+                    <span id="product-count">Connecting&hellip;</span>
+                </div>
+                <div class="gallery-scroll">
+                    <div class="gallery-grid" id="gallery-grid">
+                        <div class="gallery-empty">Waiting for database&hellip;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item grow" id="status-text">Ready</div>
+        <div class="status-item">SpeshalSolution v1.2</div>
+        <div class="status-item" id="status-db">⚫ Disconnected</div>
+    </div>
+
+</div>
+
+
+<!-- EDIT MODAL -->
+<div id="edit-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:8888; align-items:center; justify-content:center;">
+    <div class="login-dialog" style="width:360px;">
+        <div class="login-title-bar">
+            <span id="t-edit-title">✏ Edit Product</span>
+            <button id="btn-edit-close" class="title-btn" style="background:#d4d0c8;">&#x2715;</button>
+        </div>
+        <div class="login-body" style="text-align:left;">
+            <div class="login-field">
+                <label for="e-name" id="t-edit-label-name">Product Name:</label>
+                <input type="text" id="e-name" maxlength="120">
+            </div>
+
+            <!-- Edit: simple fields -->
+            <div id="edit-simple-fields">
+                <div class="login-field">
+                    <label for="e-sku" id="t-edit-label-sku">SKU:</label>
+                    <input type="text" id="e-sku" maxlength="60">
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <div class="login-field" style="flex:1;">
+                        <label for="e-ws" id="t-edit-label-ws">Wholesale (DA):</label>
+                        <input type="number" id="e-ws" min="0" step="1">
+                    </div>
+                    <div class="login-field" style="flex:1;">
+                        <label for="e-retail" id="t-edit-label-retail">Retail (DA):</label>
+                        <input type="number" id="e-retail" min="0" step="1">
+                    </div>
+                </div>
+                <div class="login-field">
+                    <label for="e-moq" id="t-edit-label-moq">MOQ:</label>
+                    <input type="number" id="e-moq" min="1" step="1">
+                </div>
+            </div>
+
+            <!-- Edit: variations fields -->
+            <div id="edit-variations-fields" style="display:none">
+                <table class="var-table" id="edit-var-table" style="margin-top:4px;">
+                    <colgroup>
+                        <col class="col-label"><col class="col-sku">
+                        <col class="col-ws"><col class="col-retail">
+                        <col class="col-moq"><col class="col-rm">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th id="t-evar-col-label">Label</th>
+                            <th id="t-evar-col-sku">SKU</th>
+                            <th id="t-evar-col-ws">WS</th>
+                            <th id="t-evar-col-retail">Retail</th>
+                            <th id="t-evar-col-moq">MOQ</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="edit-var-body"></tbody>
+                </table>
+                <button type="button" class="btn-add-row" id="btn-edit-add-row">＋ Add Row</button>
+            </div>
+
+            <div class="login-field" style="margin-top:6px;">
+                <label for="e-desc" id="t-edit-label-desc">Description:</label>
+                <textarea id="e-desc" style="width:100%; height:60px; border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #dfdfdf; border-bottom:1px solid #dfdfdf; font-family:Tahoma,Arial,sans-serif; font-size:11px; padding:2px 4px; resize:vertical; outline:none;"></textarea>
+            </div>
+            <div class="login-error" id="edit-error"></div>
+            <div class="login-btn-row" style="gap:6px;">
+                <button class="btn" id="btn-edit-cancel">Cancel</button>
+                <button class="btn" id="btn-edit-save">💾 Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="module">
+
+// ================================================================
+//  FIREBASE CONFIG
+// ================================================================
+const firebaseConfig = {
+    apiKey:            "AIzaSyB8O0o5nIPx_rtVGY9fzaVyneEXXaOHr0w",
+    authDomain:        "speshaluploadsolution.firebaseapp.com",
+    projectId:         "speshaluploadsolution",
+    storageBucket:     "speshaluploadsolution.firebasestorage.app",
+    messagingSenderId: "910916968469",
+    appId:             "1:910916968469:web:5bb882cd390cfbc2afae1c"
+};
+
+// ── Firebase Imports ─────────────────────────────────────────────
+import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInAnonymously, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Initialize ───────────────────────────────────────────────────
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ================================================================
+//  LOCAL CREDENTIALS — edit to change login details
+// ================================================================
+const LOCAL_USERS = [
+    { username: 'ss', password: 'speshal' }
+];
+
+// ── Cloudinary ───────────────────────────────────────────────────
+const CLOUDINARY_CLOUD  = 'dfagopgyv';
+const CLOUDINARY_PRESET = 'SpeshalSolution';
+
+// ================================================================
+//  TRANSLATIONS
+// ================================================================
+const LANGS = {
+    en: {
+        loginTitleBar:  '🛒 Speshal ERP Solution — Sign In',
+        loginTitle:     'ERP System — Administrator Login',
+        loginSubtitle:  'Enter your credentials to continue.',
+        labelUsername:  'Username:', labelPassword: 'Password:',
+        btnLogin: 'Log In', loggingIn: 'Logging in…',
+        invalidCreds:   'Invalid username or password.',
+        enterUsername:  'Please enter your username.',
+        enterPassword:  'Please enter your password.',
+        connectError:   'Connection error:',
+        sectionAdd:     '📋 Add New Product',
+        dragDrop:       'Drag & Drop product image here',
+        orBrowse:       '— or click to browse —',
+        labelName:      'Product Name:', labelSku: 'SKU:',
+        labelWs:        'Wholesale Price (DA):', labelRetail: 'Retail Price (DA):',
+        labelMoq:       'MOQ (Min. Order Qty):', labelDesc: 'Description:',
+        btnClear:       'Clear', btnSave: '💾 Save to Cloud',
+        sectionDb:      '🗄 Live Database',
+        btnSignout:     'Sign Out',
+        editTitle:      '✏ Edit Product',
+        editLabelName:  'Product Name:', editLabelSku: 'SKU:',
+        editLabelWs:    'Wholesale (DA):', editLabelRetail: 'Retail (DA):',
+        editLabelMoq:   'MOQ:', editLabelDesc: 'Description:',
+        btnCancel:      'Cancel', btnSaveChanges: '💾 Save Changes',
+        btnEdit:        '✏ Edit', btnDelete: '🗑 Delete',
+        deleteConfirm:  'Delete this product? This cannot be undone.',
+        signoutConfirm: 'Sign out of the ERP system?',
+        currency:       'DA', moqLabel: 'MOQ:',
+        noProducts:     'No products yet. Add one using the form on the left.',
+        productSaved:   '✔ Product saved successfully!',
+        productUpdated: 'Product updated successfully.',
+        productDeleted: 'Product deleted.',
+        noImage:        'No image selected. Please drag & drop or browse.',
+        noName:         'Product Name is required.',
+        uploadingImg:   'Uploading image…', savingRecord: 'Saving product record…',
+        loggedInAs:     'Logged in as:',
+        btnSimple:      '📋 Simple', btnVariations: '📦 Variations',
+        varColLabel:    'Label', varColSku: 'SKU', varColWs: 'WS (DA)', varColRetail: 'Retail (DA)', varColMoq: 'MOQ',
+        btnAddRow:      '＋ Add Row',
+        noVariations:   'Add at least one variation.',
+        variationsBadge:'VARIATIONS',
+    },
+    fr: {
+        loginTitleBar:  '🛒 Speshal ERP Solution — Connexion',
+        loginTitle:     'Système ERP — Connexion Administrateur',
+        loginSubtitle:  'Entrez vos identifiants pour continuer.',
+        labelUsername:  "Nom d'utilisateur:", labelPassword: 'Mot de passe:',
+        btnLogin: 'Connexion', loggingIn: 'Connexion…',
+        invalidCreds:   "Nom d'utilisateur ou mot de passe invalide.",
+        enterUsername:  "Veuillez entrer votre nom d'utilisateur.",
+        enterPassword:  'Veuillez entrer votre mot de passe.',
+        connectError:   'Erreur de connexion:',
+        sectionAdd:     '📋 Ajouter un produit',
+        dragDrop:       "Glisser-déposer l'image ici",
+        orBrowse:       '— ou cliquer pour parcourir —',
+        labelName:      'Nom du produit:', labelSku: 'Référence (SKU):',
+        labelWs:        'Prix de gros (DA):', labelRetail: 'Prix de détail (DA):',
+        labelMoq:       'Qté min. de commande:', labelDesc: 'Description:',
+        btnClear:       'Effacer', btnSave: '💾 Enregistrer',
+        sectionDb:      '🗄 Base de données',
+        btnSignout:     'Déconnexion',
+        editTitle:      '✏ Modifier le produit',
+        editLabelName:  'Nom du produit:', editLabelSku: 'Référence:',
+        editLabelWs:    'Prix de gros (DA):', editLabelRetail: 'Prix de détail (DA):',
+        editLabelMoq:   'Qté min.:', editLabelDesc: 'Description:',
+        btnCancel:      'Annuler', btnSaveChanges: '💾 Enregistrer',
+        btnEdit:        '✏ Modifier', btnDelete: '🗑 Supprimer',
+        deleteConfirm:  'Supprimer ce produit ? Action irréversible.',
+        signoutConfirm: 'Déconnecter du système ERP ?',
+        currency:       'DA', moqLabel: 'MOQ:',
+        noProducts:     'Aucun produit. Ajoutez-en un via le formulaire.',
+        productSaved:   '✔ Produit enregistré avec succès !',
+        productUpdated: 'Produit mis à jour.',
+        productDeleted: 'Produit supprimé.',
+        noImage:        'Aucune image. Glissez ou parcourez.',
+        noName:         'Le nom du produit est requis.',
+        uploadingImg:   "Téléchargement de l'image…", savingRecord: 'Enregistrement…',
+        loggedInAs:     'Connecté en tant que:',
+        btnSimple:      '📋 Simple', btnVariations: '📦 Variantes',
+        varColLabel:    'Label', varColSku: 'Réf.', varColWs: 'Gros (DA)', varColRetail: 'Détail (DA)', varColMoq: 'Min.',
+        btnAddRow:      '＋ Ajouter',
+        noVariations:   'Ajoutez au moins une variante.',
+        variationsBadge:'VARIANTES',
+    },
+    ar: {
+        loginTitleBar:  '🛒 Speshal ERP — تسجيل الدخول',
+        loginTitle:     'نظام ERP — دخول المدير',
+        loginSubtitle:  'أدخل بيانات الاعتماد للمتابعة.',
+        labelUsername:  'اسم المستخدم:', labelPassword: 'كلمة المرور:',
+        btnLogin: 'دخول', loggingIn: 'جارٍ الدخول…',
+        invalidCreds:   'اسم مستخدم أو كلمة مرور غير صحيحة.',
+        enterUsername:  'الرجاء إدخال اسم المستخدم.',
+        enterPassword:  'الرجاء إدخال كلمة المرور.',
+        connectError:   'خطأ في الاتصال:',
+        sectionAdd:     '📋 إضافة منتج جديد',
+        dragDrop:       'اسحب وأفلت صورة المنتج هنا',
+        orBrowse:       '— أو انقر للتصفح —',
+        labelName:      'اسم المنتج:', labelSku: 'رمز المنتج:',
+        labelWs:        'سعر الجملة (دج):', labelRetail: 'سعر التجزئة (دج):',
+        labelMoq:       'الحد الأدنى للطلب:', labelDesc: 'الوصف:',
+        btnClear:       'مسح', btnSave: '💾 حفظ في السحابة',
+        sectionDb:      '🗄 قاعدة البيانات',
+        btnSignout:     'تسجيل الخروج',
+        editTitle:      '✏ تعديل المنتج',
+        editLabelName:  'اسم المنتج:', editLabelSku: 'رمز المنتج:',
+        editLabelWs:    'سعر الجملة (دج):', editLabelRetail: 'سعر التجزئة (دج):',
+        editLabelMoq:   'الحد الأدنى:', editLabelDesc: 'الوصف:',
+        btnCancel:      'إلغاء', btnSaveChanges: '💾 حفظ التغييرات',
+        btnEdit:        '✏ تعديل', btnDelete: '🗑 حذف',
+        deleteConfirm:  'هل تريد حذف هذا المنتج؟ لا يمكن التراجع.',
+        signoutConfirm: 'تسجيل الخروج من النظام؟',
+        currency:       'دج', moqLabel: 'الحد الأدنى:',
+        noProducts:     'لا توجد منتجات. أضف منتجاً من النموذج.',
+        productSaved:   '✔ تم حفظ المنتج بنجاح!',
+        productUpdated: 'تم تحديث المنتج.',
+        productDeleted: 'تم حذف المنتج.',
+        noImage:        'لم يتم اختيار صورة. اسحب أو تصفح.',
+        noName:         'اسم المنتج مطلوب.',
+        uploadingImg:   'جارٍ تحميل الصورة…', savingRecord: 'جارٍ الحفظ…',
+        loggedInAs:     'مسجل الدخول كـ:',
+        btnSimple:      '📋 بسيط', btnVariations: '📦 متغيرات',
+        varColLabel:    'النوع', varColSku: 'رمز', varColWs: 'جملة (دج)', varColRetail: 'تجزئة (دج)', varColMoq: 'أدنى',
+        btnAddRow:      '＋ إضافة',
+        noVariations:   'أضف متغيراً واحداً على الأقل.',
+        variationsBadge:'متغيرات',
+    }
+};
+
+let currentLang = localStorage.getItem('lang') || 'en';
+
+function t(key) { return LANGS[currentLang][key] || LANGS.en[key] || key; }
+
+function applyLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+
+    // RTL toggle
+    document.body.classList.toggle('rtl', lang === 'ar');
+    document.documentElement.lang = lang;
+
+    // Active button
+    document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.lang === lang);
+    });
+
+    // Translate elements by ID
+    const map = {
+        't-login-titlebar':  'loginTitleBar',
+        't-login-title':     'loginTitle',
+        't-login-subtitle':  'loginSubtitle',
+        't-label-username':  'labelUsername',
+        't-label-password':  'labelPassword',
+        'btn-login':         'btnLogin',
+        't-section-add':     'sectionAdd',
+        't-drag-drop':       'dragDrop',
+        't-or-browse':       'orBrowse',
+        't-label-name':      'labelName',
+        't-label-sku':       'labelSku',
+        't-label-ws':        'labelWs',
+        't-label-retail':    'labelRetail',
+        't-label-moq':       'labelMoq',
+        't-label-desc':      'labelDesc',
+        'btn-clear':         'btnClear',
+        'btn-save':          'btnSave',
+        't-section-db':      'sectionDb',
+        'btn-signout':       'btnSignout',
+        't-edit-title':      'editTitle',
+        't-edit-label-name': 'editLabelName',
+        't-edit-label-sku':  'editLabelSku',
+        't-edit-label-ws':   'editLabelWs',
+        't-edit-label-retail':'editLabelRetail',
+        't-edit-label-moq':  'editLabelMoq',
+        't-edit-label-desc': 'editLabelDesc',
+        'btn-edit-cancel':   'btnCancel',
+        'btn-edit-save':     'btnSaveChanges',
+        'tab-simple':        'btnSimple',
+        'tab-variations':    'btnVariations',
+        't-var-col-label':   'varColLabel',
+        't-var-col-sku':     'varColSku',
+        't-var-col-ws':      'varColWs',
+        't-var-col-retail':  'varColRetail',
+        't-var-col-moq':     'varColMoq',
+        'btn-add-row':       'btnAddRow',
+        't-evar-col-label':  'varColLabel',
+        't-evar-col-sku':    'varColSku',
+        't-evar-col-ws':     'varColWs',
+        't-evar-col-retail': 'varColRetail',
+        't-evar-col-moq':    'varColMoq',
+        'btn-edit-add-row':  'btnAddRow',
+    };
+
+    Object.entries(map).forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = t(key);
+    });
+
+    // Re-render gallery cards with new language
+    if (lastSnapshot) renderGallery(lastSnapshot);
+}
+
+// Language switcher
+document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyLanguage(btn.dataset.lang));
+});
+
+
+// ================================================================
+//  FORM MODE (simple / variations)
+// ================================================================
+let formMode = 'simple';
+
+function switchFormMode(mode) {
+    formMode = mode;
+    document.getElementById('simple-fields').style.display    = mode === 'simple'     ? '' : 'none';
+    document.getElementById('variations-fields').style.display = mode === 'variations' ? '' : 'none';
+    document.querySelectorAll('.mode-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    if (mode === 'variations' && document.getElementById('var-body').rows.length === 0) {
+        addVariationRow('var-body'); addVariationRow('var-body');
+    }
+}
+
+document.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchFormMode(btn.dataset.mode));
+});
+
+function addVariationRow(tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><input type="text"   class="v-label"  placeholder="e.g. S / Red" maxlength="40"></td>
+        <td><input type="text"   class="v-sku"    maxlength="40"></td>
+        <td><input type="number" class="v-ws"     min="0" step="1"></td>
+        <td><input type="number" class="v-retail" min="0" step="1"></td>
+        <td><input type="number" class="v-moq"    min="1" step="1"></td>
+        <td><button type="button" class="var-remove-btn" title="Remove">✕</button></td>`;
+    row.querySelector('.var-remove-btn').addEventListener('click', () => row.remove());
+    tbody.appendChild(row);
+}
+
+function getVariationsFromBody(tbodyId) {
+    const rows = document.getElementById(tbodyId).rows;
+    const result = [];
+    for (const row of rows) {
+        const label  = row.querySelector('.v-label').value.trim();
+        const sku    = row.querySelector('.v-sku').value.trim();
+        const ws     = row.querySelector('.v-ws').value;
+        const retail = row.querySelector('.v-retail').value;
+        const moq    = row.querySelector('.v-moq').value;
+        result.push({
+            label,
+            sku:   sku   || '',
+            wholesalePrice: ws     ? parseFloat(ws)    : null,
+            retailPrice:    retail ? parseFloat(retail) : null,
+            moq:            moq    ? parseInt(moq, 10)  : null,
+        });
+    }
+    return result;
+}
+
+document.getElementById('btn-add-row').addEventListener('click', () => addVariationRow('var-body'));
+document.getElementById('btn-edit-add-row').addEventListener('click', () => addVariationRow('edit-var-body'));
+
+
+// ================================================================
+//  UI REFERENCES
+// ================================================================
+const loginScreen  = document.getElementById('login-screen');
+const mainWindow   = document.getElementById('main-window');
+const btnLogin     = document.getElementById('btn-login');
+const loginUsername = document.getElementById('login-username');
+const loginPassword = document.getElementById('login-password');
+const loginError   = document.getElementById('login-error');
+const btnSignout   = document.getElementById('btn-signout');
+const userName     = document.getElementById('user-name');
+const dropZone     = document.getElementById('drop-zone');
+const fileInput    = document.getElementById('file-input');
+const dropHint     = document.getElementById('drop-hint');
+const btnSave      = document.getElementById('btn-save');
+const btnClear     = document.getElementById('btn-clear');
+const galleryGrid  = document.getElementById('gallery-grid');
+const productCount = document.getElementById('product-count');
+const statusText   = document.getElementById('status-text');
+const statusDb     = document.getElementById('status-db');
+const progressWrap = document.getElementById('progress-wrap');
+const progressFill = document.getElementById('progress-fill');
+const msgBox       = document.getElementById('msg-box');
+const fName   = document.getElementById('f-name');
+const fSku    = document.getElementById('f-sku');
+const fWs     = document.getElementById('f-ws');
+const fRetail = document.getElementById('f-retail');
+const fMoq    = document.getElementById('f-moq');
+const fDesc   = document.getElementById('f-desc');
+
+
+// ================================================================
+//  AUTH STATE
+// ================================================================
+let unsubscribeFirestore = null;
+let localUsername = null;
+let lastSnapshot  = null;
+
+onAuthStateChanged(auth, (user) => {
+    if (user && localUsername) {
+        loginScreen.classList.add('hidden');
+        mainWindow.style.display = 'block';
+        userName.textContent = localUsername;
+        setStatus(`${t('loggedInAs')} ${localUsername}`);
+        applyLanguage(currentLang);
+        startFirestoreListener();
+    } else {
+        mainWindow.style.display = 'none';
+        loginScreen.classList.remove('hidden');
+        if (unsubscribeFirestore) { unsubscribeFirestore(); unsubscribeFirestore = null; }
+    }
+});
+
+
+// ================================================================
+//  LOGIN
+// ================================================================
+loginPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnLogin.click(); });
+loginUsername.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginPassword.focus(); });
+
+btnLogin.addEventListener('click', async () => {
+    loginError.textContent = '';
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+    if (!username) { loginError.textContent = t('enterUsername'); return; }
+    if (!password) { loginError.textContent = t('enterPassword'); return; }
+
+    const match = LOCAL_USERS.find(u => u.username === username && u.password === password);
+    if (!match)  { loginError.textContent = t('invalidCreds'); return; }
+
+    btnLogin.disabled = true;
+    btnLogin.textContent = t('loggingIn');
+    try {
+        localUsername = username;
+        await signInAnonymously(auth);
+        // If user was already signed in, onAuthStateChanged won't fire again —
+        // so we manually show the main UI here.
+        loginScreen.classList.add('hidden');
+        mainWindow.style.display = 'block';
+        userName.textContent = localUsername;
+        setStatus(`${t('loggedInAs')} ${localUsername}`);
+        applyLanguage(currentLang);
+        if (!unsubscribeFirestore) startFirestoreListener();
+    } catch (err) {
+        localUsername = null;
+        loginError.textContent = `${t('connectError')} ${err.message}`;
+        btnLogin.disabled = false;
+        btnLogin.textContent = t('btnLogin');
+    }
+});
+
+
+// ================================================================
+//  SIGN OUT
+// ================================================================
+btnSignout.addEventListener('click', async () => {
+    if (!confirm(t('signoutConfirm'))) return;
+    clearForm();
+    localUsername = null;
+    await signOut(auth);
+});
+
+
+// ================================================================
+//  FIRESTORE LISTENER
+// ================================================================
+function startFirestoreListener() {
+    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    unsubscribeFirestore = onSnapshot(q,
+        (snapshot) => {
+            statusDb.textContent = '🟢 Connected';
+            lastSnapshot = snapshot;
+            renderGallery(snapshot);
+        },
+        (err) => {
+            statusDb.textContent = '🔴 Error';
+            galleryGrid.innerHTML = '';
+            const d = document.createElement('div');
+            d.className = 'gallery-empty';
+            d.style.color = '#cc0000';
+            d.textContent = `Database error: ${err.message}`;
+            galleryGrid.appendChild(d);
+        }
+    );
+}
+
+function renderGallery(snapshot) {
+    const count = snapshot.size;
+    productCount.textContent = `(${count} ${count !== 1 ? t('noProducts').split(' ')[0] : ''})`;
+    productCount.textContent = `(${count})`;
+    galleryGrid.innerHTML = '';
+    if (count === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'gallery-empty';
+        empty.textContent = t('noProducts');
+        galleryGrid.appendChild(empty);
+        return;
+    }
+    snapshot.forEach((docSnap) => galleryGrid.appendChild(buildCard(docSnap.data(), docSnap.id)));
+}
+
+
+// ================================================================
+//  DRAG & DROP
+// ================================================================
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', (e) => { if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) setFile(file);
+    else showMsg(t('noImage'), 'error');
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+let selectedFile = null;
+
+function setFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const existing = dropZone.querySelector('img');
+        if (existing) existing.remove();
+        dropHint.style.display = 'none';
+        const img = document.createElement('img');
+        img.src = e.target.result; img.alt = file.name;
+        dropZone.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+    setStatus(`${file.name} (${formatBytes(file.size)})`);
+}
+
+
+// ================================================================
+//  CLEAR FORM
+// ================================================================
+btnClear.addEventListener('click', clearForm);
+function clearForm() {
+    selectedFile = null; fileInput.value = '';
+    fName.value = fSku.value = fWs.value = fRetail.value = fMoq.value = fDesc.value = '';
+    const img = dropZone.querySelector('img');
+    if (img) img.remove();
+    dropHint.style.display = '';
+    hideMsg();
+    progressWrap.style.display = 'none';
+    progressFill.style.width = '0%';
+    setStatus(`${t('loggedInAs')} ${localUsername || ''}`);
+    // Reset variations table
+    document.getElementById('var-body').innerHTML = '';
+    switchFormMode('simple');
+}
+
+
+// ================================================================
+//  SAVE TO CLOUD
+// ================================================================
+btnSave.addEventListener('click', async () => {
+    hideMsg();
+    if (!selectedFile)       return showMsg(t('noImage'), 'error');
+    if (!fName.value.trim()) return showMsg(t('noName'),  'error');
+
+    // Variations validation
+    if (formMode === 'variations') {
+        const rows = document.getElementById('var-body').rows;
+        if (rows.length === 0) return showMsg(t('noVariations'), 'error');
+    }
+
+    btnSave.disabled = btnClear.disabled = true;
+    progressWrap.style.display = 'block';
+    progressFill.style.width = '0%';
+    setStatus(t('uploadingImg'));
+    showMsg(t('uploadingImg'), 'info');
+
+    try {
+        const imageUrl = await new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('upload_preset', CLOUDINARY_PRESET);
+            formData.append('folder', 'products');
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`);
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    progressFill.style.width = Math.round((e.loaded / e.total) * 80) + '%';
+                }
+            });
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) { progressFill.style.width = '85%'; resolve(JSON.parse(xhr.responseText).secure_url); }
+                else reject(new Error(`Cloudinary error: ${xhr.statusText}`));
+            });
+            xhr.addEventListener('error', () => reject(new Error('Network error during upload.')));
+            xhr.send(formData);
+        });
+
+        progressFill.style.width = '90%';
+        setStatus(t('savingRecord'));
+        showMsg(t('savingRecord'), 'info');
+
+        const docData = {
+            name:        fName.value.trim(),
+            description: fDesc.value.trim(),
+            imageUrl,
+            uploadedBy:  localUsername || 'unknown',
+            createdAt:   serverTimestamp(),
+        };
+
+        if (formMode === 'variations') {
+            docData.hasVariations = true;
+            docData.variations    = getVariationsFromBody('var-body');
+        } else {
+            docData.hasVariations  = false;
+            docData.sku            = fSku.value.trim() || '';
+            docData.wholesalePrice = fWs.value    ? parseFloat(fWs.value)    : null;
+            docData.retailPrice    = fRetail.value ? parseFloat(fRetail.value) : null;
+            docData.moq            = fMoq.value   ? parseInt(fMoq.value, 10)  : null;
+        }
+
+        await addDoc(collection(db, 'products'), docData);
+
+        progressFill.style.width = '100%';
+        showMsg(t('productSaved'), 'success');
+        setStatus(t('productSaved'));
+        clearForm();
+
+    } catch (err) {
+        console.error('[Save]', err);
+        showMsg(`Error: ${err.message}`, 'error');
+        setStatus('Save failed.');
+    } finally {
+        btnSave.disabled = btnClear.disabled = false;
+        setTimeout(() => { progressWrap.style.display = 'none'; progressFill.style.width = '0%'; }, 2500);
+    }
+});
+
+
+// ================================================================
+//  BUILD PRODUCT CARD
+// ================================================================
+function buildCard(p, id) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+
+    const img = document.createElement('img');
+    img.alt = p.name || ''; img.loading = 'lazy'; img.src = p.imageUrl || '';
+    img.addEventListener('error', () => { img.src = placeholderSvg(); });
+
+    const info = document.createElement('div');
+    info.className = 'card-info';
+
+    const name = document.createElement('div');
+    name.className = 'card-name'; name.title = p.name || '';
+    name.textContent = p.name || '(unnamed)';
+
+    let priceBlock;
+    if (p.hasVariations && Array.isArray(p.variations) && p.variations.length > 0) {
+        // Badge
+        const badge = document.createElement('div');
+        badge.className = 'card-var-badge';
+        badge.textContent = t('variationsBadge');
+
+        // Variations list (max 3 rows)
+        const varList = document.createElement('div');
+        varList.className = 'card-variations';
+        const show = p.variations.slice(0, 3);
+        show.forEach(v => {
+            const row = document.createElement('div');
+            row.className = 'card-var-row';
+            const lbl = document.createElement('span');
+            lbl.className = 'card-var-label';
+            lbl.textContent = v.label || '—';
+            const pr = document.createElement('span');
+            pr.className = 'card-var-price';
+            pr.textContent = v.wholesalePrice != null
+                ? `${Number(v.wholesalePrice).toLocaleString()} ${t('currency')}`
+                : '—';
+            row.append(lbl, pr);
+            varList.appendChild(row);
+        });
+        if (p.variations.length > 3) {
+            const more = document.createElement('div');
+            more.className = 'card-var-more';
+            more.textContent = `+${p.variations.length - 3} more`;
+            varList.appendChild(more);
+        }
+        priceBlock = document.createDocumentFragment();
+        priceBlock.append(badge, varList);
+    } else {
+        const sku = document.createElement('div');
+        sku.className = 'card-sku';
+        sku.textContent = p.sku || '';
+
+        const ws = document.createElement('div');
+        ws.className = 'card-ws';
+        ws.textContent = p.wholesalePrice != null
+            ? `${Number(p.wholesalePrice).toLocaleString()} ${t('currency')}`
+            : '—';
+
+        const moq = document.createElement('div');
+        moq.className = 'card-moq';
+        moq.textContent = p.moq != null ? `${t('moqLabel')} ${p.moq}` : '';
+
+        priceBlock = document.createDocumentFragment();
+        priceBlock.append(sku, ws, moq);
+    }
+
+    // Buttons row
+    const btns = document.createElement('div');
+    btns.className = 'card-btns';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'card-btn';
+    editBtn.textContent = t('btnEdit');
+    editBtn.addEventListener('click', () => openEditModal(p, id));
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'card-btn card-btn-delete';
+    delBtn.textContent = t('btnDelete');
+    delBtn.addEventListener('click', () => deleteProduct(id, p.name));
+
+    btns.append(editBtn, delBtn);
+    info.append(name, priceBlock, btns);
+    card.append(img, info);
+    return card;
+}
+
+
+// ================================================================
+//  DELETE PRODUCT
+// ================================================================
+async function deleteProduct(id, name) {
+    if (!confirm(`${t('deleteConfirm')}\n\n"${name}"`)) return;
+    try {
+        await deleteDoc(doc(db, 'products', id));
+        setStatus(t('productDeleted'));
+    } catch (err) {
+        console.error('[Delete]', err);
+        alert(`Error: ${err.message}`);
+    }
+}
+
+
+// ================================================================
+//  EDIT MODAL
+// ================================================================
+const editOverlay   = document.getElementById('edit-overlay');
+const editError     = document.getElementById('edit-error');
+const btnEditSave   = document.getElementById('btn-edit-save');
+const btnEditCancel = document.getElementById('btn-edit-cancel');
+const btnEditClose  = document.getElementById('btn-edit-close');
+const eName   = document.getElementById('e-name');
+const eSku    = document.getElementById('e-sku');
+const eWs     = document.getElementById('e-ws');
+const eRetail = document.getElementById('e-retail');
+const eMoq    = document.getElementById('e-moq');
+const eDesc   = document.getElementById('e-desc');
+
+let editingDocId = null;
+
+function openEditModal(p, id) {
+    editingDocId  = id;
+    eName.value   = p.name        || '';
+    eDesc.value   = p.description || '';
+    editError.textContent = '';
+
+    const editSimple = document.getElementById('edit-simple-fields');
+    const editVars   = document.getElementById('edit-variations-fields');
+    const editVarBody = document.getElementById('edit-var-body');
+
+    if (p.hasVariations && Array.isArray(p.variations)) {
+        editSimple.style.display = 'none';
+        editVars.style.display   = '';
+        editVarBody.innerHTML    = '';
+        p.variations.forEach(v => {
+            addVariationRow('edit-var-body');
+            const lastRow = editVarBody.lastElementChild;
+            lastRow.querySelector('.v-label').value  = v.label  || '';
+            lastRow.querySelector('.v-sku').value    = v.sku    || '';
+            lastRow.querySelector('.v-ws').value     = v.wholesalePrice ?? '';
+            lastRow.querySelector('.v-retail').value = v.retailPrice    ?? '';
+            lastRow.querySelector('.v-moq').value    = v.moq            ?? '';
+        });
+    } else {
+        editSimple.style.display = '';
+        editVars.style.display   = 'none';
+        eSku.value    = p.sku            || '';
+        eWs.value     = p.wholesalePrice ?? '';
+        eRetail.value = p.retailPrice    ?? '';
+        eMoq.value    = p.moq            ?? '';
+    }
+
+    editOverlay.style.display = 'flex';
+    eName.focus();
+}
+
+function closeEditModal() { editOverlay.style.display = 'none'; editingDocId = null; }
+
+btnEditClose.addEventListener('click', closeEditModal);
+btnEditCancel.addEventListener('click', closeEditModal);
+editOverlay.addEventListener('click', (e) => { if (e.target === editOverlay) closeEditModal(); });
+
+btnEditSave.addEventListener('click', async () => {
+    if (!editingDocId) return;
+    editError.textContent = '';
+    if (!eName.value.trim()) { editError.textContent = t('noName'); return; }
+
+    btnEditSave.disabled = true;
+    btnEditSave.textContent = t('savingRecord');
+    try {
+        const isVarMode = document.getElementById('edit-variations-fields').style.display !== 'none';
+        const update = {
+            name:        eName.value.trim(),
+            description: eDesc.value.trim(),
+        };
+        if (isVarMode) {
+            const rows = document.getElementById('edit-var-body').rows;
+            if (rows.length === 0) { editError.textContent = t('noVariations'); btnEditSave.disabled = false; btnEditSave.textContent = t('btnSaveChanges'); return; }
+            update.hasVariations = true;
+            update.variations    = getVariationsFromBody('edit-var-body');
+        } else {
+            update.hasVariations  = false;
+            update.sku            = eSku.value.trim() || '';
+            update.wholesalePrice = eWs.value    ? parseFloat(eWs.value)    : null;
+            update.retailPrice    = eRetail.value ? parseFloat(eRetail.value) : null;
+            update.moq            = eMoq.value   ? parseInt(eMoq.value, 10)  : null;
+        }
+        await updateDoc(doc(db, 'products', editingDocId), update);
+        closeEditModal();
+        setStatus(t('productUpdated'));
+    } catch (err) {
+        editError.textContent = `Error: ${err.message}`;
+    } finally {
+        btnEditSave.disabled = false;
+        btnEditSave.textContent = t('btnSaveChanges');
+    }
+});
+
+
+// ================================================================
+//  HELPERS
+// ================================================================
+function setStatus(msg) { statusText.textContent = msg; }
+
+function showMsg(text, type) {
+    msgBox.textContent = text; msgBox.className = `msg-box ${type}`; msgBox.style.display = 'block';
+}
+function hideMsg() { msgBox.style.display = 'none'; msgBox.textContent = ''; msgBox.className = 'msg-box'; }
+
+function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function placeholderSvg() {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="110">
+        <rect width="150" height="110" fill="#c0c0c0"/>
+        <text x="75" y="55" dominant-baseline="middle" text-anchor="middle"
+              font-family="Tahoma,Arial" font-size="10" fill="#808080">No Image</text></svg>`;
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+// Apply saved language on load
+applyLanguage(currentLang);
+
+</script>
+</body>
+</html>
