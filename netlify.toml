@@ -1,7 +1,2 @@
 [build]
   publish = "web-deploy"
-
-[[redirects]]
-  from = "/"
-  to   = "/catalog-admin.html"
-  status = 200
