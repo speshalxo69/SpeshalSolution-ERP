@@ -26,11 +26,14 @@
     display: flex; align-items: center; gap: 5px;
 }
 
-.login-body { padding: 20px 16px 16px; text-align: center; }
-.login-app-icon { font-size: 36px; display: block; margin-bottom: 10px; }
+.login-body { padding: 18px 16px 16px; text-align: center; }
+.login-app-icon { font-size: 36px; display: block; margin-bottom: 14px; }
 .login-title { font-size: 13px; font-weight: bold; margin-bottom: 4px; }
 .login-subtitle { font-size: 11px; color: #444444; margin-bottom: 16px; line-height: 1.5; }
 .login-divider { border: none; border-top: 1px solid #808080; border-bottom: 1px solid #ffffff; margin: 0 0 14px; }
+.login-title,
+.login-subtitle,
+.login-divider { display: none; }
 
 .login-field { text-align: left; margin-bottom: 6px; }
 .login-field label { display: block; margin-bottom: 2px; font-size: 11px; }

@@ -1,13 +1,13 @@
-import { LOCAL_USERS, CLOUDINARY_CLOUD, CLOUDINARY_PRESET } from './config.js';
+import { CLOUDINARY_CLOUD, CLOUDINARY_PRESET } from './config.js';
 import {
-    auth, db, signInAnonymously, signOut, onAuthStateChanged,
-    collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp,
+    auth, db, createSecondaryAuthSession, deleteApp, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
+    collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, where, getDoc, getDocs,
 } from './firebase-init.js';
 import { t, setLang } from './i18n.js';
 import { setStatus, showMsg, hideMsg, formatBytes, placeholderSvg } from './helpers.js';
 import {
     startCategoriesListener, stopCategoriesListener, showCategoryPanel, addCategory,
-    getCategories, getCategoryName, onCategoriesChange, populateCategoryDropdowns, win95Input, win95Confirm,
+    getCategories, getCategoryName, onCategoriesChange, populateCategoryDropdowns, win95Input, win95Confirm, setCategoryAuth,
 } from './categories.js';
 import { initSearch, setProducts, onFilterChange, updateSearchCategories } from './search.js';
 import { initMenuBar, setMenuActions, showAboutDialog, showPreferencesDialog, showShortcutsDialog } from './menu-bar.js';
@@ -16,6 +16,10 @@ import { hideReports, renderReports, isReportVisible } from './reports.js';
 let unsubscribeFirestore = null;
 let localUsername = null;
 let currentUserRole = 'viewer';
+let currentUserEmail = null;
+let currentUserUid = null;
+let adminViewOwnerUid = null;
+let adminViewOwnerEmail = '';
 let allProducts = [];
 let selectedFile = null;
 let formMode = 'simple';
@@ -32,10 +36,12 @@ const loginScreen = document.getElementById('login-screen');
 const mainWindow = document.getElementById('main-window');
 const contentArea = document.getElementById('content-area');
 const btnLogin = document.getElementById('btn-login');
-const loginUsername = document.getElementById('login-username');
+const loginEmail = document.getElementById('login-email');
 const loginPassword = document.getElementById('login-password');
 const loginError = document.getElementById('login-error');
 const btnSignout = document.getElementById('btn-signout');
+const btnUserMgmt = document.getElementById('btn-user-mgmt');
+const roleBadge = document.getElementById('role-badge');
 const userName = document.getElementById('user-name');
 const modeSwitcher = document.getElementById('mode-switcher');
 const btnModeCatalog = document.getElementById('btn-mode-catalog');
@@ -84,13 +90,152 @@ const eRetail = document.getElementById('e-retail');
 const eMoq = document.getElementById('e-moq');
 const eDesc = document.getElementById('e-desc');
 const eCat = document.getElementById('e-category');
+const userMgmtOverlay = document.getElementById('user-mgmt-overlay');
 
 function canUseDesignerMode() {
     return currentUserRole === 'admin' || currentUserRole === 'designer';
 }
 
+function canAccessAllProducts() {
+    return currentUserRole === 'designer' || (currentUserRole === 'admin' && !adminViewOwnerUid);
+}
+
 function getDefaultModeForRole() {
     return 'catalog';
+}
+
+function getCurrentUserLabel() {
+    return localUsername || currentUserEmail || currentUserUid || 'unknown';
+}
+
+function getEffectiveOwnerUid() {
+    if (currentUserRole === 'admin' && adminViewOwnerUid) return adminViewOwnerUid;
+    return currentUserUid;
+}
+
+function getEffectiveOwnerEmail() {
+    if (currentUserRole === 'admin' && adminViewOwnerUid) return adminViewOwnerEmail || '';
+    return currentUserEmail || '';
+}
+
+function getCurrentViewLabel() {
+    if (currentUserRole !== 'admin') return '';
+    return adminViewOwnerUid ? (adminViewOwnerEmail || adminViewOwnerUid) : t('adminViewAll');
+}
+
+function buildStatusText() {
+    const base = `${t('loggedInAs')} ${getCurrentUserLabel()}`;
+    if (currentUserRole === 'admin') return `${base} | ${t('viewingLabel')} ${getCurrentViewLabel()}`;
+    return base;
+}
+
+function buildDesignerStatusText() {
+    if (currentUserRole === 'admin') return `${t('designerReady')} | ${t('viewingLabel')} ${getCurrentViewLabel()}`;
+    return t('designerReady');
+}
+
+function updateRoleBadge() {
+    if (!roleBadge) return;
+    if (!currentUserRole || currentUserRole === 'viewer') {
+        roleBadge.textContent = '';
+        roleBadge.className = 'role-badge';
+        roleBadge.style.display = 'none';
+        return;
+    }
+    roleBadge.style.display = '';
+    roleBadge.textContent = String(currentUserRole).toUpperCase();
+    roleBadge.className = `role-badge role-${currentUserRole}`;
+}
+
+function applyRoleUi() {
+    if (btnUserMgmt) btnUserMgmt.style.display = currentUserRole === 'admin' ? '' : 'none';
+    if (currentUserRole !== 'admin') closeUserMgmt();
+    updateRoleBadge();
+}
+
+async function loadAdminViewOptions() {
+    const snapshot = await getDocs(collection(db, 'users'));
+    const options = [{ uid: '', email: t('adminViewAll') }];
+
+    snapshot.forEach((userDoc) => {
+        const data = userDoc.data();
+        const role = data.role || 'client';
+        if (role !== 'client') return;
+        options.push({
+            uid: userDoc.id,
+            email: data.email || userDoc.id,
+        });
+    });
+
+    const [allOption, ...clientOptions] = options;
+    clientOptions.sort((left, right) => left.email.localeCompare(right.email));
+    return [allOption, ...clientOptions];
+}
+
+function promptAdminViewScope(options) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+
+        const optionMarkup = options
+            .map((option) => `<option value="${option.uid}">${option.email}</option>`)
+            .join('');
+
+        overlay.innerHTML = `
+            <div class="login-dialog" style="width:340px;">
+                <div class="login-title-bar">
+                    <span>${t('adminViewTitle')}</span>
+                    <button class="title-btn admin-view-close">\u2715</button>
+                </div>
+                <div class="login-body" style="text-align:left;">
+                    <div style="margin-bottom:10px; font-size:11px; line-height:1.5;">${t('adminViewPrompt')}</div>
+                    <div class="login-field">
+                        <label for="admin-view-select">${t('adminViewLabel')}</label>
+                        <select id="admin-view-select" style="width:100%; font-family:Tahoma,Arial,sans-serif; font-size:11px; border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #dfdfdf; border-bottom:1px solid #dfdfdf; padding:2px 4px; background:#fff;">
+                            ${optionMarkup}
+                        </select>
+                    </div>
+                    <div class="login-btn-row" style="justify-content:flex-end; gap:6px;">
+                        <button class="btn admin-view-cancel">${t('btnCancel')}</button>
+                        <button class="btn admin-view-submit">${t('adminViewOpen')}</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        const select = overlay.querySelector('#admin-view-select');
+        const selectedUid = adminViewOwnerUid || '';
+        select.value = options.some((option) => option.uid === selectedUid) ? selectedUid : '';
+
+        const close = (uid) => {
+            const match = options.find((option) => option.uid === uid) || options[0];
+            overlay.remove();
+            resolve({
+                uid: match.uid || null,
+                email: match.email || '',
+            });
+        };
+
+        overlay.querySelector('.admin-view-close').addEventListener('click', () => close(select.value));
+        overlay.querySelector('.admin-view-cancel').addEventListener('click', () => close(select.value));
+        overlay.querySelector('.admin-view-submit').addEventListener('click', () => close(select.value));
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) close(select.value);
+        });
+    });
+}
+
+async function selectAdminViewScope() {
+    if (currentUserRole !== 'admin') {
+        adminViewOwnerUid = null;
+        adminViewOwnerEmail = '';
+        return;
+    }
+
+    const options = await loadAdminViewOptions();
+    const selected = await promptAdminViewScope(options);
+    adminViewOwnerUid = selected.uid || null;
+    adminViewOwnerEmail = selected.email || '';
 }
 
 function getOriginalImageUrl(product) {
@@ -167,7 +312,7 @@ const CSV_PRODUCT_HEADERS = [
     'id', 'name', 'description', 'categoryId', 'categoryName',
     'hasVariations', 'sku', 'wholesalePrice', 'retailPrice', 'moq', 'variations',
     'imageUrl', 'originalImageUrl', 'currentImageUrl', 'editedImageUrl', 'imageStatus',
-    'uploadedBy', 'editedBy', 'editedAt',
+    'ownerUid', 'ownerEmail', 'uploadedBy', 'editedBy', 'editedAt',
 ];
 
 function toCsvSafeValue(value) {
@@ -205,6 +350,8 @@ function buildProductsCsv() {
             currentImageUrl: data.currentImageUrl || '',
             editedImageUrl: data.editedImageUrl || '',
             imageStatus: data.imageStatus || '',
+            ownerUid: data.ownerUid || '',
+            ownerEmail: data.ownerEmail || '',
             uploadedBy: data.uploadedBy || '',
             editedBy: data.editedBy || '',
             editedAt: toCsvDate(data.editedAt),
@@ -353,12 +500,22 @@ function buildImportedImageFields(row) {
 
 function buildProductPayloadFromCsvRow(row) {
     const hasVariations = parseCsvBoolean(row.hasVariations) || Boolean(getCsvCell(row, 'variations'));
+    const csvOwnerUid = getCsvCell(row, 'ownerUid');
+    const csvOwnerEmail = getCsvCell(row, 'ownerEmail');
+    const ownerUid = currentUserRole === 'admin'
+        ? (adminViewOwnerUid || csvOwnerUid || currentUserUid)
+        : getEffectiveOwnerUid();
+    const ownerEmail = currentUserRole === 'admin'
+        ? ((adminViewOwnerUid ? adminViewOwnerEmail : csvOwnerEmail) || getEffectiveOwnerEmail())
+        : getEffectiveOwnerEmail();
     const payload = {
         ...buildImportedImageFields(row),
         name: getCsvCell(row, 'name'),
         description: getCsvCell(row, 'description'),
         categoryId: resolveCategoryIdFromCsvRow(row),
-        uploadedBy: getCsvCell(row, 'uploadedBy') || localUsername || 'unknown',
+        ownerUid,
+        ownerEmail,
+        uploadedBy: getCsvCell(row, 'uploadedBy') || getCurrentUserLabel(),
         editedBy: getCsvCell(row, 'editedBy') || null,
         editedAt: parseCsvDate(row.editedAt),
     };
@@ -602,7 +759,7 @@ function syncModeUi({ rerender = true, suppressStatus = false } = {}) {
     if (designerBanner) designerBanner.style.display = currentAppMode === 'designer' ? '' : 'none';
     if (sectionDb) sectionDb.textContent = currentAppMode === 'designer' ? t('sectionDesigner') : t('sectionDb');
     if (!suppressStatus && mainWindow.style.display === 'block') {
-        setStatus(currentAppMode === 'designer' ? t('designerReady') : `${t('loggedInAs')} ${localUsername || ''}`);
+        setStatus(currentAppMode === 'designer' ? buildDesignerStatusText() : buildStatusText());
     }
     updateBulkDownloadButtonState();
     if (rerender) setProducts(allProducts);
@@ -611,7 +768,8 @@ function syncModeUi({ rerender = true, suppressStatus = false } = {}) {
 function showUnlockedUi() {
     loginScreen.classList.add('hidden');
     mainWindow.style.display = 'block';
-    userName.textContent = localUsername || '\u2014';
+    userName.textContent = getCurrentUserLabel();
+    applyRoleUi();
     currentAppMode = getDefaultModeForRole();
     applyLanguage(localStorage.getItem('lang') || 'en');
     syncModeUi({ rerender: false });
@@ -735,13 +893,8 @@ function promptDesignerPin() {
 
 async function ensureDesignerModeUnlocked() {
     if (!canUseDesignerMode()) return false;
-    if (designerPinUnlocked) return true;
-    const unlocked = await promptDesignerPin();
-    if (unlocked) {
-        designerPinUnlocked = true;
-        setStatus(t('designerUnlocked'));
-    }
-    return unlocked;
+    designerPinUnlocked = true;
+    return true;
 }
 
 async function setAppMode(mode) {
@@ -866,7 +1019,7 @@ async function handleEditedImageSelection(productId, file) {
             currentImageUrl: editedUrl,
             imageUrl: editedUrl,
             imageStatus: 'edited',
-            editedBy: localUsername || 'unknown',
+            editedBy: getCurrentUserLabel(),
             editedAt: serverTimestamp(),
         });
         setStatus(t('imageUpdated'));
@@ -971,7 +1124,7 @@ function applyLanguage(lang) {
         't-login-titlebar': 'loginTitleBar',
         't-login-title': 'loginTitle',
         't-login-subtitle': 'loginSubtitle',
-        't-label-username': 'labelUsername',
+        't-label-email': 'labelEmail',
         't-label-password': 'labelPassword',
         'btn-login': 'btnLogin',
         'btn-mode-catalog': 'modeCatalog',
@@ -997,6 +1150,7 @@ function applyLanguage(lang) {
         't-search-min': 'searchPriceMin',
         't-search-max': 'searchPriceMax',
         'btn-download-filtered-originals': 'btnDownloadFilteredOriginals',
+        'btn-user-mgmt': 'menuUserMgmt',
         'btn-signout': 'btnSignout',
         't-edit-title': 'editTitle',
         'btn-edit-download-original': 'btnDownloadOriginal',
@@ -1105,28 +1259,52 @@ function getVariationsFromBody(tbodyId) {
 document.getElementById('btn-add-row').addEventListener('click', () => addVariationRow('var-body'));
 document.getElementById('btn-edit-add-row').addEventListener('click', () => addVariationRow('edit-var-body'));
 
-onAuthStateChanged(auth, (user) => {
-    if (user && localUsername) {
-        btnLogin.disabled = false;
-        btnLogin.textContent = t('btnLogin');
-        showUnlockedUi();
-        if (!unsubscribeFirestore) startFirestoreListener();
-        startCategoriesListener();
-        setStatus(`${t('loggedInAs')} ${localUsername}`);
-        return;
-    }
-    mainWindow.style.display = 'none';
-    loginScreen.classList.remove('hidden');
+onAuthStateChanged(auth, async (user) => {
     btnLogin.disabled = false;
     btnLogin.textContent = t('btnLogin');
+
+    if (user) {
+        try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const userData = userDoc.exists() ? userDoc.data() : {};
+
+            currentUserUid = user.uid;
+            currentUserEmail = user.email || userData.email || '';
+            localUsername = currentUserEmail || userData.email || user.uid;
+            currentUserRole = userData.role || 'client';
+            designerPinUnlocked = false;
+
+            showUnlockedUi();
+            await selectAdminViewScope();
+            setCategoryAuth(currentUserUid, currentUserRole, adminViewOwnerUid);
+            startFirestoreListener();
+            startCategoriesListener();
+            setStatus(buildStatusText());
+            return;
+        } catch (err) {
+            console.error('[Auth]', err);
+            loginError.textContent = `${t('connectError')} ${err.message}`;
+            await signOut(auth);
+        }
+    }
+
+    mainWindow.style.display = 'none';
+    loginScreen.classList.remove('hidden');
     if (unsubscribeFirestore) {
         unsubscribeFirestore();
         unsubscribeFirestore = null;
     }
     stopCategoriesListener();
+    setCategoryAuth(null, null);
     userName.textContent = '\u2014';
+    localUsername = null;
+    currentUserEmail = null;
+    currentUserUid = null;
+    adminViewOwnerUid = null;
+    adminViewOwnerEmail = '';
     designerPinUnlocked = false;
     currentUserRole = 'viewer';
+    applyRoleUi();
     currentAppMode = 'catalog';
     syncModeUi({ rerender: false, suppressStatus: true });
 });
@@ -1134,35 +1312,32 @@ onAuthStateChanged(auth, (user) => {
 loginPassword.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') btnLogin.click();
 });
-loginUsername.addEventListener('keydown', (event) => {
+loginEmail.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') loginPassword.focus();
 });
 
 btnLogin.addEventListener('click', async () => {
     loginError.textContent = '';
-    const username = loginUsername.value.trim();
+    const email = loginEmail.value.trim();
     const password = loginPassword.value;
-    if (!username) return void (loginError.textContent = t('enterUsername'));
+    if (!email) return void (loginError.textContent = t('enterEmail'));
     if (!password) return void (loginError.textContent = t('enterPassword'));
-    const match = LOCAL_USERS.find((user) => user.username === username && user.password === password);
-    if (!match) return void (loginError.textContent = t('invalidCreds'));
+
     btnLogin.disabled = true;
     btnLogin.textContent = t('loggingIn');
+
     try {
-        localUsername = username;
-        currentUserRole = match.role || 'admin';
-        designerPinUnlocked = false;
-        await signInAnonymously(auth);
-        showUnlockedUi();
-        if (!unsubscribeFirestore) startFirestoreListener();
-        startCategoriesListener();
-        setStatus(`${t('loggedInAs')} ${localUsername}`);
-        btnLogin.disabled = false;
-        btnLogin.textContent = t('btnLogin');
+        await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-        localUsername = null;
-        currentUserRole = 'viewer';
-        loginError.textContent = `${t('connectError')} ${err.message}`;
+        if (err.code === 'auth/invalid-email') {
+            loginError.textContent = t('invalidEmail');
+        } else if (err.code === 'auth/too-many-requests') {
+            loginError.textContent = t('tooManyAttempts');
+        } else if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(err.code)) {
+            loginError.textContent = t('invalidCreds');
+        } else {
+            loginError.textContent = `${t('connectError')} ${err.message}`;
+        }
         btnLogin.disabled = false;
         btnLogin.textContent = t('btnLogin');
     }
@@ -1174,14 +1349,39 @@ btnSignout.addEventListener('click', async () => {
     clearForm();
     hideReports();
     closeEditModal();
+    closeUserMgmt();
     designerPinUnlocked = false;
     localUsername = null;
+    currentUserEmail = null;
+    currentUserUid = null;
+    adminViewOwnerUid = null;
+    adminViewOwnerEmail = '';
     currentUserRole = 'viewer';
     await signOut(auth);
 });
 
 function startFirestoreListener() {
-    const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+        unsubscribeFirestore = null;
+    }
+
+    let productsQuery;
+    if (canAccessAllProducts()) {
+        productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    } else if (getEffectiveOwnerUid()) {
+        productsQuery = query(
+            collection(db, 'products'),
+            where('ownerUid', '==', getEffectiveOwnerUid()),
+            orderBy('createdAt', 'desc')
+        );
+    } else {
+        allProducts = [];
+        setProducts(allProducts);
+        refreshOpenEditImagePanel();
+        return;
+    }
+
     unsubscribeFirestore = onSnapshot(
         productsQuery,
         (snapshot) => {
@@ -1449,7 +1649,9 @@ btnSave.addEventListener('click', async () => {
             ...buildInitialImageFields(imageUrl),
             name: fName.value.trim(),
             description: fDesc.value.trim(),
-            uploadedBy: localUsername || 'unknown',
+            uploadedBy: getCurrentUserLabel(),
+            ownerUid: getEffectiveOwnerUid(),
+            ownerEmail: getEffectiveOwnerEmail(),
             createdAt: serverTimestamp(),
             categoryId: fCat ? (fCat.value || null) : null,
         };
@@ -1626,6 +1828,221 @@ btnEditSave.addEventListener('click', async () => {
     }
 });
 
+function closeUserMgmt() {
+    if (userMgmtOverlay) userMgmtOverlay.style.display = 'none';
+}
+
+function openUserMgmt() {
+    if (!userMgmtOverlay || currentUserRole !== 'admin') return;
+    userMgmtOverlay.style.display = 'flex';
+    loadUserList();
+}
+
+async function loadUserList() {
+    const listEl = document.getElementById('user-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="color:#808080; padding:8px;">Loading...</div>';
+
+    try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        listEl.innerHTML = '';
+        if (snapshot.empty) {
+            listEl.innerHTML = '<div style="color:#808080; padding:8px;">No users found.</div>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'user-mgmt-table';
+        table.innerHTML = '<thead><tr><th>Email</th><th>Role</th><th>Actions</th></tr></thead>';
+        const tbody = document.createElement('tbody');
+
+        snapshot.forEach((userDoc) => {
+            const data = userDoc.data();
+            const tr = document.createElement('tr');
+            const isCurrentUser = userDoc.id === currentUserUid;
+            const role = data.role || 'client';
+
+            tr.innerHTML = `
+                <td>${data.email || userDoc.id}</td>
+                <td><span class="role-badge role-${role}">${role.toUpperCase()}</span></td>
+                <td></td>
+            `;
+
+            const actionCell = tr.querySelector('td:last-child');
+            if (isCurrentUser) {
+                actionCell.textContent = '(you)';
+            } else {
+                const select = document.createElement('select');
+                select.className = 'user-role-select';
+                ['admin', 'client'].forEach((value) => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = value;
+                    if (value === role) option.selected = true;
+                    select.appendChild(option);
+                });
+                select.addEventListener('change', async () => {
+                    try {
+                        await updateDoc(doc(db, 'users', userDoc.id), { role: select.value });
+                        loadUserList();
+                    } catch (err) {
+                        select.value = role;
+                        if (err.code === 'permission-denied') {
+                            alert('Error updating role: Firestore rules are blocking admin writes to the users collection.\n\nDeploy the firestore.rules file so admins can manage user roles.');
+                        } else {
+                            alert(`Error updating role: ${err.message}`);
+                        }
+                    }
+                });
+                actionCell.appendChild(select);
+            }
+
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        listEl.appendChild(table);
+    } catch (err) {
+        console.error('[UserMgmt]', err);
+        listEl.innerHTML = `<div style="color:#cc0000; padding:8px;">Error: ${err.message}</div>`;
+    }
+}
+
+async function migrateExistingDocs() {
+    if (currentUserRole !== 'admin') return;
+    const ok = await win95Confirm('Migration', 'Tag all existing products & categories (without ownerUid) with your admin account?\n\nThis ensures old data stays visible under your admin account.');
+    if (!ok) return;
+
+    let migrated = 0;
+    try {
+        const productSnapshot = await getDocs(collection(db, 'products'));
+        for (const productDoc of productSnapshot.docs) {
+            const data = productDoc.data();
+            if (!data.ownerUid) {
+                await updateDoc(doc(db, 'products', productDoc.id), {
+                    ownerUid: currentUserUid,
+                    ownerEmail: currentUserEmail || '',
+                });
+                migrated += 1;
+            }
+        }
+
+        const categorySnapshot = await getDocs(collection(db, 'categories'));
+        for (const categoryDoc of categorySnapshot.docs) {
+            const data = categoryDoc.data();
+            if (!data.ownerUid) {
+                await updateDoc(doc(db, 'categories', categoryDoc.id), {
+                    ownerUid: currentUserUid,
+                    ownerEmail: currentUserEmail || '',
+                });
+                migrated += 1;
+            }
+        }
+
+        alert(`Migration complete! ${migrated} documents tagged with your admin account.`);
+        if (currentUserRole === 'admin') {
+            startFirestoreListener();
+            startCategoriesListener();
+        }
+    } catch (err) {
+        console.error('[Migration]', err);
+        alert(`Migration error: ${err.message}`);
+    }
+}
+
+if (btnUserMgmt) btnUserMgmt.addEventListener('click', openUserMgmt);
+
+const btnCreateUser = document.getElementById('btn-create-user');
+if (btnCreateUser) {
+    btnCreateUser.addEventListener('click', async () => {
+        const emailInput = document.getElementById('new-user-email');
+        const passInput = document.getElementById('new-user-pass');
+        const roleSelect = document.getElementById('new-user-role');
+        const errorEl = document.getElementById('create-user-error');
+
+        if (!emailInput || !passInput || !roleSelect || !errorEl) return;
+
+        errorEl.textContent = '';
+        const email = emailInput.value.trim();
+        const password = passInput.value;
+        const role = roleSelect.value;
+
+        if (!email) {
+            errorEl.textContent = 'Email is required.';
+            return;
+        }
+        if (!password || password.length < 6) {
+            errorEl.textContent = 'Password must be at least 6 characters.';
+            return;
+        }
+
+        btnCreateUser.disabled = true;
+        btnCreateUser.textContent = 'Creating...';
+
+        let secondarySession = null;
+        try {
+            secondarySession = createSecondaryAuthSession();
+            const result = await createUserWithEmailAndPassword(secondarySession.auth, email, password);
+            const newUid = result.user.uid;
+
+            await setDoc(doc(db, 'users', newUid), {
+                email,
+                role,
+                createdAt: serverTimestamp(),
+                createdBy: currentUserEmail || getCurrentUserLabel(),
+            });
+
+            emailInput.value = '';
+            passInput.value = '';
+            roleSelect.value = 'client';
+            errorEl.textContent = '';
+            await signOut(secondarySession.auth);
+            await deleteApp(secondarySession.app);
+            secondarySession = null;
+
+            alert(`User "${email}" created with role "${role}".`);
+            loadUserList();
+        } catch (err) {
+            console.error('[CreateUser]', err);
+            if (err.code === 'permission-denied') {
+                errorEl.textContent = 'Firestore rules are blocking writes to the users collection. Deploy the firestore.rules file first.';
+            } else if (err.code === 'auth/email-already-in-use') {
+                errorEl.textContent = 'This email is already registered.';
+            } else if (err.code === 'auth/weak-password') {
+                errorEl.textContent = 'Password is too weak (min 6 characters).';
+            } else if (err.code === 'auth/invalid-email') {
+                errorEl.textContent = 'Invalid email address.';
+            } else {
+                errorEl.textContent = err.message;
+            }
+        } finally {
+            if (secondarySession) {
+                try {
+                    await signOut(secondarySession.auth);
+                } catch {}
+                try {
+                    await deleteApp(secondarySession.app);
+                } catch {}
+            }
+            btnCreateUser.disabled = false;
+            btnCreateUser.textContent = 'Create User';
+        }
+    });
+}
+
+const btnUserMgmtClose = document.getElementById('btn-user-mgmt-close');
+const btnUserMgmtCancel = document.getElementById('btn-user-mgmt-cancel');
+const btnMigrate = document.getElementById('btn-migrate');
+
+if (btnUserMgmtClose) btnUserMgmtClose.addEventListener('click', closeUserMgmt);
+if (btnUserMgmtCancel) btnUserMgmtCancel.addEventListener('click', closeUserMgmt);
+if (userMgmtOverlay) {
+    userMgmtOverlay.addEventListener('click', (event) => {
+        if (event.target === userMgmtOverlay) closeUserMgmt();
+    });
+}
+if (btnMigrate) btnMigrate.addEventListener('click', migrateExistingDocs);
+
 if (btnModeCatalog) btnModeCatalog.addEventListener('click', () => setAppMode('catalog'));
 if (btnModeDesigner) btnModeDesigner.addEventListener('click', () => setAppMode('designer'));
 
@@ -1705,6 +2122,10 @@ document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         if (document.querySelector('.image-viewer-overlay')) {
             closeImageViewer();
+            return;
+        }
+        if (userMgmtOverlay?.style.display === 'flex') {
+            closeUserMgmt();
             return;
         }
         if (editOverlay.style.display === 'flex') closeEditModal();

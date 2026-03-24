@@ -1,12 +1,25 @@
 // ================================================================
 //  CATEGORIES — Firestore CRUD + Tree UI
 // ================================================================
-import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from './firebase-init.js';
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, where } from './firebase-init.js';
 import { t } from './i18n.js';
 
 let categoriesCache = [];   // flat array of { id, name, parentId, order }
 let unsubCategories = null;
 let onChangeCallbacks = [];
+let authUid = null;
+let authRole = 'viewer';
+let scopedOwnerUid = null;
+
+export function setCategoryAuth(uid, role, scopeUid = null) {
+    authUid = uid || null;
+    authRole = role || 'viewer';
+    scopedOwnerUid = scopeUid || null;
+}
+
+function canAccessAllCategories() {
+    return (authRole === 'admin' || authRole === 'designer') && !scopedOwnerUid;
+}
 
 export function getCategories() { return categoriesCache; }
 
@@ -15,8 +28,35 @@ export function onCategoriesChange(cb) { onChangeCallbacks.push(cb); }
 function notify() { onChangeCallbacks.forEach(cb => cb(categoriesCache)); }
 
 export function startCategoriesListener() {
-    const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
-    unsubCategories = onSnapshot(q, (snap) => {
+    if (unsubCategories) {
+        unsubCategories();
+        unsubCategories = null;
+    }
+
+    let categoriesQuery;
+    if (scopedOwnerUid) {
+        categoriesQuery = query(
+            collection(db, 'categories'),
+            where('ownerUid', '==', scopedOwnerUid),
+            orderBy('order', 'asc')
+        );
+    } else if (canAccessAllCategories()) {
+        categoriesQuery = query(collection(db, 'categories'), orderBy('order', 'asc'));
+    } else if (authUid) {
+        categoriesQuery = query(
+            collection(db, 'categories'),
+            where('ownerUid', '==', authUid),
+            orderBy('order', 'asc')
+        );
+    } else {
+        categoriesCache = [];
+        notify();
+        renderCategoryTree();
+        populateCategoryDropdowns();
+        return;
+    }
+
+    unsubCategories = onSnapshot(categoriesQuery, (snap) => {
         // Hide error banner on success
         const errBanner = document.getElementById('cat-permission-error');
         if (errBanner) errBanner.style.display = 'none';
@@ -36,6 +76,10 @@ export function startCategoriesListener() {
 
 export function stopCategoriesListener() {
     if (unsubCategories) { unsubCategories(); unsubCategories = null; }
+    categoriesCache = [];
+    notify();
+    renderCategoryTree();
+    populateCategoryDropdowns();
 }
 
 export async function addCategory(name, parentId = null) {
@@ -46,7 +90,8 @@ export async function addCategory(name, parentId = null) {
             parentId,
             order: maxOrder + 1,
             createdAt: serverTimestamp(),
-            createdBy: 'admin'
+            createdBy: authUid || 'unknown',
+            ownerUid: scopedOwnerUid || authUid || null
         });
     } catch (err) {
         if (err.code === 'permission-denied') {

@@ -28,8 +28,8 @@
             <div class="login-subtitle" id="t-login-subtitle">Enter your credentials to continue.</div>
             <hr class="login-divider">
             <div class="login-field">
-                <label for="login-username" id="t-label-username">Username:</label>
-                <input type="text" id="login-username" autocomplete="username" spellcheck="false">
+                <label for="login-email" id="t-label-email">Email:</label>
+                <input type="email" id="login-email" autocomplete="email" spellcheck="false">
             </div>
             <div class="login-field">
                 <label for="login-password" id="t-label-password">Password:</label>
@@ -76,8 +76,10 @@
                 <button class="lang-btn" data-lang="fr">FR</button>
                 <button class="lang-btn" data-lang="ar">AR</button>
             </div>
+            <button id="btn-user-mgmt" style="display:none;">User Management</button>
             <div class="user-badge">
                 <img class="user-avatar" id="user-avatar" src="" alt="" style="display:none;">
+                <span id="role-badge" class="role-badge" style="display:none;"></span>
                 <span id="user-name">—</span>
             </div>
             <button id="btn-signout">Sign Out</button>
@@ -386,6 +388,52 @@
             <div class="login-btn-row" style="gap:6px;">
                 <button class="btn" id="btn-edit-cancel">Cancel</button>
                 <button class="btn" id="btn-edit-save">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- USER MANAGEMENT MODAL -->
+<div id="user-mgmt-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div class="login-dialog" style="width:440px;">
+        <div class="login-title-bar">
+            <span>&#x1F465; User Management</span>
+            <button id="btn-user-mgmt-close" class="title-btn" style="background:#d4d0c8;">&#x2715;</button>
+        </div>
+        <div class="login-body" style="text-align:left;">
+            <div style="margin-bottom:10px; padding:8px; border:1px solid #808080; background:#ececec;">
+                <div style="font-weight:bold; font-size:11px; margin-bottom:6px;">Create New User</div>
+                <div class="login-field" style="margin-bottom:4px;">
+                    <label for="new-user-email" style="font-size:10px;">Email:</label>
+                    <input type="email" id="new-user-email" placeholder="client@example.com" style="width:100%;">
+                </div>
+                <div class="login-field" style="margin-bottom:4px;">
+                    <label for="new-user-pass" style="font-size:10px;">Password:</label>
+                    <input type="password" id="new-user-pass" placeholder="min 6 characters" style="width:100%;">
+                </div>
+                <div class="login-field" style="margin-bottom:4px;">
+                    <label for="new-user-role" style="font-size:10px;">Role:</label>
+                    <select id="new-user-role" style="width:100%; font-family:Tahoma,Arial,sans-serif; font-size:11px; border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #dfdfdf; border-bottom:1px solid #dfdfdf; padding:2px 4px; background:#fff;">
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="login-error" id="create-user-error" style="font-size:10px;"></div>
+                <button id="btn-create-user" class="btn" style="margin-top:4px;">Create User</button>
+            </div>
+
+            <div style="font-weight:bold; font-size:11px; margin-bottom:4px;">Existing Users</div>
+            <div id="user-list" style="max-height:200px; overflow-y:auto; border:1px solid #808080; background:#fff; padding:4px;">
+                <div style="color:#808080; padding:8px;">Loading...</div>
+            </div>
+
+            <div style="margin-top:8px; padding:6px; border:1px solid #808080; background:#fff8e0; font-size:10px;">
+                <strong>Migration:</strong> If you have existing products/categories without owner tags,
+                <button id="btn-migrate" class="btn" style="font-size:10px; padding:1px 6px; margin-left:4px;">Run Migration</button>
+            </div>
+
+            <div class="login-btn-row" style="margin-top:8px;">
+                <button class="btn" id="btn-user-mgmt-cancel">Close</button>
             </div>
         </div>
     </div>

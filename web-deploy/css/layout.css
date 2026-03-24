@@ -17,6 +17,18 @@
 
 .menu-bar-right { display: flex; align-items: center; gap: 6px; padding-right: 4px; }
 
+#btn-user-mgmt {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #404040; border-bottom: 1px solid #404040;
+    font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    font-size: 10px; padding: 1px 8px; cursor: pointer; color: #000000;
+}
+#btn-user-mgmt:active {
+    border-top: 1px solid #404040; border-left: 1px solid #404040;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+
 .mode-switcher { display: flex; gap: 2px; }
 .mode-btn {
     background: #d4d0c8;
@@ -34,6 +46,32 @@
 
 .user-badge { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #444444; }
 .user-avatar { width: 16px; height: 16px; border: 1px solid #808080; object-fit: cover; }
+.role-badge {
+    display: inline-block;
+    min-width: 48px;
+    padding: 1px 7px 0;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.25;
+    letter-spacing: 0.5px;
+    text-align: center;
+    background: #ffffff;
+    border: 1px solid #808080;
+    color: #000000;
+    box-sizing: border-box;
+}
+.role-badge.role-admin {
+    color: #cc0000;
+    border-color: #cc0000;
+}
+.role-badge.role-designer {
+    color: #000080;
+    border-color: #000080;
+}
+.role-badge.role-client {
+    color: #008000;
+    border-color: #008000;
+}
 
 #btn-signout {
     background: #d4d0c8;
@@ -177,6 +215,34 @@ body.designer-mode .right-panel {
     margin: 0 auto;
     background: #ffffff;
     border: 1px solid #808080;
+}
+
+.user-mgmt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+.user-mgmt-table th {
+    padding: 4px 6px;
+    text-align: left;
+    background: #d4d0c8;
+    border-bottom: 1px solid #808080;
+}
+.user-mgmt-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid #e0e0e0;
+}
+.user-mgmt-table tr:hover td {
+    background: #e8e8ff;
+}
+.user-role-select {
+    min-width: 110px;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 11px;
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff;
+    padding: 2px 4px;
 }
 
 /* ── Responsive ── */

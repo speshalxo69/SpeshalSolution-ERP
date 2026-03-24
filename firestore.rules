@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function hasUserDoc() {
+      return signedIn() && exists(userDocPath());
+    }
+
+    function currentRole() {
+      return hasUserDoc() ? get(userDocPath()).data.role : null;
+    }
+
+    function isAdmin() {
+      return currentRole() == 'admin';
+    }
+
+    function isDesigner() {
+      return currentRole() == 'designer';
+    }
+
+    function isAdminOrDesigner() {
+      return isAdmin() || isDesigner();
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if signedIn() && isAdmin();
+      allow update, delete: if signedIn() && isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if signedIn() && (
+        isAdminOrDesigner() ||
+        resource.data.ownerUid == request.auth.uid
+      );
+
+      allow create: if signedIn() && (
+        isAdminOrDesigner() ||
+        request.resource.data.ownerUid == request.auth.uid
+      );
+
+      allow update, delete: if signedIn() && (
+        isAdminOrDesigner() ||
+        resource.data.ownerUid == request.auth.uid
+      );
+    }
+
+    match /categories/{categoryId} {
+      allow read: if signedIn() && (
+        isAdminOrDesigner() ||
+        resource.data.ownerUid == request.auth.uid
+      );
+
+      allow create: if signedIn() && (
+        isAdminOrDesigner() ||
+        request.resource.data.ownerUid == request.auth.uid
+      );
+
+      allow update, delete: if signedIn() && (
+        isAdminOrDesigner() ||
+        resource.data.ownerUid == request.auth.uid
+      );
+    }
+  }
+}
