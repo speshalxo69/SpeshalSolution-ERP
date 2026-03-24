@@ -1,0 +1,125 @@
+/* ================================================================
+   WIN95 BASE THEME
+   ================================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background-color: #008080;
+    font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    font-size: 11px;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+@media (max-width: 600px) {
+    body { padding: 6px; font-size: 12px; }
+}
+
+/* ── RTL Support ── */
+body.rtl { direction: rtl; }
+body.rtl .menu-bar-left { flex-direction: row-reverse; }
+body.rtl .menu-bar-right { flex-direction: row-reverse; }
+body.rtl .btn-row { flex-direction: row-reverse; }
+body.rtl .login-btn-row { flex-direction: row-reverse; }
+body.rtl .field-row { flex-direction: row-reverse; }
+
+/* ── Window Chrome ── */
+#main-window { display: none; }
+.window {
+    background: #d4d0c8;
+    border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+    border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+    max-width: 1120px; margin: 0 auto;
+}
+
+.title-bar {
+    background: linear-gradient(to right, #0a2486, #1b8fcb 50%, #3aaade);
+    padding: 3px 4px 3px 6px;
+    display: flex; align-items: center; justify-content: space-between;
+    user-select: none;
+}
+.title-bar-left {
+    display: flex; align-items: center; gap: 5px;
+    color: #ffffff; font-size: 12px; font-weight: bold;
+    text-shadow: 1px 1px 0 #00003a;
+}
+.title-buttons { display: flex; gap: 2px; }
+.title-btn {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #404040; border-bottom: 1px solid #404040;
+    width: 21px; height: 21px; font-size: 11px;
+    font-family: Marlett, Tahoma, Arial, sans-serif;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    padding: 0; line-height: 1;
+}
+.title-btn:active {
+    border-top: 1px solid #404040; border-left: 1px solid #404040;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+
+/* ── Buttons ── */
+.btn {
+    background: #d4d0c8;
+    border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+    border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+    font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    font-size: 11px; padding: 4px 16px; cursor: pointer; min-width: 80px; color: #000000;
+}
+.btn:active {
+    border-top: 2px solid #404040; border-left: 2px solid #404040;
+    border-right: 2px solid #ffffff; border-bottom: 2px solid #ffffff;
+    padding: 5px 15px 3px 17px;
+}
+.btn:disabled { color: #808080; cursor: default; }
+.btn:focus { outline: 1px dotted #000000; outline-offset: -4px; }
+.btn-row {
+    display: flex; justify-content: flex-end; gap: 6px;
+    padding-top: 6px; border-top: 1px solid #808080; margin-top: 6px;
+}
+
+/* ── Panels & Groupbox ── */
+.panel {
+    background: #d4d0c8;
+    border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080; border-bottom: 2px solid #808080;
+    padding: 8px;
+}
+.groupbox {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+    padding: 8px; margin-bottom: 6px;
+}
+.section-label {
+    font-weight: bold; font-size: 11px; margin-bottom: 6px;
+    padding-bottom: 3px; border-bottom: 1px solid #808080; color: #000000;
+}
+
+/* ── Message Box ── */
+.msg-box { display: none; padding: 4px 6px; margin-top: 4px; font-size: 11px; border: 1px solid #808080; }
+.msg-box.error   { color: #cc0000; background: #fff8f8; }
+.msg-box.success { color: #006600; background: #f8fff8; }
+.msg-box.info    { color: #000080; background: #f8f8ff; }
+
+/* ── Progress Bar ── */
+.progress-wrap {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+    height: 16px; background: #d4d0c8; margin-top: 6px; display: none; overflow: hidden;
+}
+.progress-fill { height: 100%; background: #000080; width: 0%; }
+
+/* ── Status Bar ── */
+.status-bar { border-top: 1px solid #808080; padding: 2px 4px; display: flex; gap: 4px; }
+.status-item {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+    padding: 1px 6px; font-size: 11px;
+}
+.status-item.grow { flex: 1; }
+
+/* ── Modal overlay ── */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9500;
+    display: flex; align-items: center; justify-content: center;
+}

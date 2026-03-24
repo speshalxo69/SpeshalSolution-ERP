@@ -1,0 +1,77 @@
+/* ================================================================
+   SEARCH & FILTER BAR
+   ================================================================ */
+.search-bar {
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+    background: #d4d0c8;
+}
+
+.search-bar .search-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.search-bar .search-group label {
+    font-size: 10px;
+    color: #444;
+    margin-bottom: 0;
+}
+
+.search-bar input[type="text"],
+.search-bar input[type="number"] {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff; font-family: Tahoma, Arial, sans-serif;
+    font-size: 11px; padding: 2px 4px; outline: none;
+}
+.search-bar input[type="text"]:focus,
+.search-bar input[type="number"]:focus { border-color: #000080; }
+
+#search-text { width: 140px; }
+#search-cat {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff; font-family: Tahoma, Arial, sans-serif;
+    font-size: 11px; padding: 2px 4px; outline: none;
+    max-width: 130px;
+}
+#search-price-min, #search-price-max { width: 60px; }
+
+#search-clear {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 10px; padding: 2px 8px; cursor: pointer; color: #000000;
+    align-self: flex-end;
+}
+#search-clear:active {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+
+#search-result-count {
+    font-size: 10px;
+    color: #000080;
+    font-weight: bold;
+    align-self: flex-end;
+    padding: 2px 4px;
+    display: none;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+    .search-bar { flex-direction: column; align-items: stretch; }
+    #search-text { width: 100%; }
+    #search-cat { max-width: 100%; width: 100%; }
+    .search-bar .search-group { flex-direction: column; }
+    #search-price-min, #search-price-max { width: 100%; }
+}

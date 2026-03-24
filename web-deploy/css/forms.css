@@ -1,0 +1,97 @@
+/* ================================================================
+   FORMS — Inputs, drop zone, variations table
+   ================================================================ */
+
+/* ── Drop Zone ── */
+.drop-zone {
+    border: 2px dashed #808080; background: #ffffff;
+    min-height: 130px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; margin-bottom: 8px; position: relative; overflow: hidden;
+}
+.drop-zone.dragover { background: #c8d8f0; border-color: #000080; border-style: solid; }
+.drop-hint { color: #808080; text-align: center; pointer-events: none; padding: 8px; line-height: 1.6; }
+.drop-hint .icon { font-size: 28px; display: block; margin-bottom: 4px; }
+.drop-hint .sub  { font-size: 10px; color: #aaaaaa; }
+.drop-zone img { max-width: 100%; max-height: 200px; display: block; object-fit: contain; }
+#file-input { display: none; }
+
+/* ── Form Fields ── */
+.field-group { margin-bottom: 5px; }
+label { display: block; margin-bottom: 2px; font-size: 11px; }
+input[type="text"], input[type="number"], textarea, select.category-select {
+    width: 100%;
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff; font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    font-size: 11px; padding: 2px 4px; outline: none;
+}
+input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select.category-select:focus { border-color: #000080; }
+textarea { resize: vertical; height: 58px; }
+.field-row { display: flex; gap: 6px; }
+.field-row .field-group { flex: 1; min-width: 0; }
+
+/* ── Form Mode Tabs ── */
+.form-mode-tabs { display: flex; margin-bottom: 6px; gap: 0; }
+.mode-tab {
+    flex: 1; padding: 3px 6px; font-size: 11px; cursor: pointer; text-align: center;
+    background: #d4d0c8; color: #000000;
+    font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+}
+.mode-tab.active {
+    background: #c0bdb5; font-weight: bold;
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+.mode-tab:hover:not(.active) { background: #c8c4bc; }
+
+/* ── Variations Table ── */
+.var-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 4px; table-layout: fixed; }
+.var-table th {
+    background: #c0bdb5; text-align: left; padding: 2px 3px;
+    border: 1px solid #808080; font-size: 10px; white-space: nowrap; overflow: hidden;
+}
+.var-table td { padding: 1px; border: 1px solid #c8c8c8; vertical-align: middle; }
+.var-table col.col-label  { width: 26%; }
+.var-table col.col-sku    { width: 18%; }
+.var-table col.col-ws     { width: 18%; }
+.var-table col.col-retail { width: 18%; }
+.var-table col.col-moq    { width: 12%; }
+.var-table col.col-rm     { width: 8%;  }
+.var-table input[type="text"], .var-table input[type="number"] {
+    width: 100%; border: none; background: #ffffff;
+    font-family: Tahoma, Arial, sans-serif; font-size: 10px;
+    padding: 1px 2px; outline: none; height: 17px; box-sizing: border-box;
+}
+.var-table input:focus { outline: 1px solid #000080; }
+.var-remove-btn {
+    display: block; width: 100%; background: #d4d0c8; border: none;
+    font-size: 11px; cursor: pointer; text-align: center; line-height: 17px;
+    color: #990000; font-family: Tahoma, Arial, sans-serif; padding: 0;
+}
+.var-remove-btn:hover { background: #ffcccc; }
+.btn-add-row {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+    font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    font-size: 10px; padding: 2px 8px; cursor: pointer; margin-top: 3px; color: #000000;
+}
+.btn-add-row:active {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+.var-empty-row td {
+    text-align: center; color: #808080; padding: 4px; font-style: italic; font-size: 10px;
+}
+
+/* ── Mobile adjustments ── */
+@media (max-width: 640px) {
+    .drop-zone { min-height: 90px; }
+    .var-table { font-size: 11px; }
+    .var-table input[type="text"],
+    .var-table input[type="number"] { font-size: 11px; height: 22px; }
+    .card-btn { padding: 5px 0; font-size: 11px; }
+}

@@ -1,0 +1,77 @@
+/* ================================================================
+   CATEGORIES PANEL — Tree view
+   ================================================================ */
+#category-panel {
+    display: none;
+    margin-bottom: 6px;
+}
+
+.cat-panel-inner {
+    background: #d4d0c8;
+    border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080; border-bottom: 2px solid #808080;
+    padding: 8px;
+}
+
+.cat-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #808080;
+}
+
+.cat-panel-header .section-label { margin: 0; border: none; padding: 0; }
+
+#btn-cat-new {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+    font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
+    font-size: 10px; padding: 2px 8px; cursor: pointer; color: #000000;
+}
+#btn-cat-new:active {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+
+#category-tree {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff;
+    padding: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.cat-tree-row {
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    line-height: 18px;
+}
+.cat-tree-row:hover {
+    background: #e8e8e8;
+}
+
+.cat-tree-label {
+    font-size: 11px;
+}
+.cat-tree-label:hover {
+    color: #000080;
+    text-decoration: underline;
+}
+
+.cat-tree-btn {
+    background: #d4d0c8;
+    border: 1px solid #808080;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 10px;
+    width: 16px; height: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 2px;
+}
+.cat-tree-btn:hover { background: #c8c4bc; }
+.cat-tree-btn-del { color: #990000; }
+.cat-tree-btn-del:hover { background: #ffcccc; }

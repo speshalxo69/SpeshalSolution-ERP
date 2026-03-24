@@ -1,0 +1,89 @@
+/* ================================================================
+   GALLERY — Product cards, gallery grid
+   ================================================================ */
+.gallery-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #808080;
+}
+.gallery-header .section-label { margin: 0; border: none; padding: 0; }
+#product-count { font-weight: normal; color: #808080; font-size: 10px; }
+
+.gallery-scroll {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff; padding: 4px; overflow-y: auto; height: 540px;
+}
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.gallery-empty { grid-column: 1 / -1; color: #808080; padding: 24px; text-align: center; }
+
+/* ── Product Cards ── */
+.product-card {
+    border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+    border-right: 2px solid #808080; border-bottom: 2px solid #808080;
+    background: #d4d0c8; cursor: default; overflow: hidden;
+}
+.product-card:hover { border-top: 2px solid #000080; border-left: 2px solid #000080; }
+.product-card img { width: 100%; height: 110px; object-fit: cover; display: block; border-bottom: 1px solid #808080; background: #c0c0c0; }
+.card-info { padding: 5px; }
+.card-name { font-weight: bold; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-sku  { font-size: 10px; color: #808080; margin-top: 1px; }
+.card-ws   { font-size: 11px; color: #000080; font-weight: bold; margin-top: 2px; }
+.card-moq  { font-size: 10px; color: #606060; margin-top: 1px; }
+.card-btns { display: flex; gap: 3px; margin-top: 5px; }
+.card-btn {
+    flex: 1;
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+    font-family: Tahoma, Arial, sans-serif; font-size: 10px;
+    padding: 2px 0; cursor: pointer; text-align: center;
+}
+.card-btn:active {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+.card-btn-delete { color: #990000; }
+
+/* ── Category badge on card ── */
+.card-cat-badge {
+    display: inline-block; background: #006600; color: #ffffff;
+    font-size: 9px; padding: 0 4px; margin: 2px 0; letter-spacing: 0.3px;
+}
+
+/* ── Variations on card ── */
+.card-var-badge {
+    display: inline-block; background: #000080; color: #ffffff;
+    font-size: 9px; padding: 0 4px; margin-bottom: 3px; letter-spacing: 0.5px;
+}
+.card-variations { font-size: 10px; margin-top: 1px; }
+.card-var-row { display: flex; justify-content: space-between; padding: 1px 0; border-bottom: 1px dotted #c8c8c8; }
+.card-var-row:last-child { border-bottom: none; }
+.card-var-label { font-weight: bold; color: #000080; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
+.card-var-price { color: #606060; white-space: nowrap; }
+.card-var-more  { font-size: 9px; color: #808080; margin-top: 1px; }
+
+/* ── Scrollbar ── */
+.gallery-scroll::-webkit-scrollbar { width: 17px; }
+.gallery-scroll::-webkit-scrollbar-track { background: #d4d0c8; }
+.gallery-scroll::-webkit-scrollbar-thumb {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+}
+.gallery-scroll::-webkit-scrollbar-button:single-button {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+    height: 17px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+    .gallery-scroll { height: 360px; }
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+    .product-card img { height: 120px; }
+}
+
+@media (max-width: 400px) {
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+}
