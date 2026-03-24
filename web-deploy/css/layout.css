@@ -244,6 +244,15 @@ body.designer-mode .right-panel {
     background: #ffffff;
     padding: 2px 4px;
 }
+.user-mgmt-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.user-delete-btn {
+    color: #990000;
+}
 
 /* ── Responsive ── */
 .pin-pad-body {

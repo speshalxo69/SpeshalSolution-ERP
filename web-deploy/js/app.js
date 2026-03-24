@@ -1872,6 +1872,9 @@ async function loadUserList() {
             if (isCurrentUser) {
                 actionCell.textContent = '(you)';
             } else {
+                const actionWrap = document.createElement('div');
+                actionWrap.className = 'user-mgmt-actions';
+
                 const select = document.createElement('select');
                 select.className = 'user-role-select';
                 ['admin', 'client'].forEach((value) => {
@@ -1894,7 +1897,20 @@ async function loadUserList() {
                         }
                     }
                 });
-                actionCell.appendChild(select);
+                actionWrap.appendChild(select);
+
+                if (role !== 'admin') {
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'btn user-delete-btn';
+                    deleteButton.type = 'button';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.addEventListener('click', () => {
+                        deleteUserAccount(userDoc.id, data, deleteButton);
+                    });
+                    actionWrap.appendChild(deleteButton);
+                }
+
+                actionCell.appendChild(actionWrap);
             }
 
             tbody.appendChild(tr);
@@ -1905,6 +1921,115 @@ async function loadUserList() {
     } catch (err) {
         console.error('[UserMgmt]', err);
         listEl.innerHTML = `<div style="color:#cc0000; padding:8px;">Error: ${err.message}</div>`;
+    }
+}
+
+async function deleteUserAccount(targetUid, targetData = {}, triggerButton = null) {
+    if (currentUserRole !== 'admin') return;
+    if (!targetUid || targetUid === currentUserUid) {
+        alert('You cannot delete your own account from User Management.');
+        return;
+    }
+
+    const targetEmail = targetData.email || targetUid;
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        alert('Your admin session has expired. Please sign in again.');
+        return;
+    }
+
+    const originalText = triggerButton ? triggerButton.textContent : '';
+    if (triggerButton) {
+        triggerButton.disabled = true;
+        triggerButton.textContent = 'Checking...';
+    }
+
+    const callDeleteFunction = async (payload) => {
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch('/.netlify/functions/delete-user-account', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const rawBody = await response.text();
+        let data = {};
+        if (rawBody) {
+            try {
+                data = JSON.parse(rawBody);
+            } catch {
+                data = { error: rawBody };
+            }
+        }
+
+        if (!response.ok) {
+            if (response.status === 501) {
+                throw new Error('Delete User needs the deployed Netlify function. The local preview server cannot run serverless functions.');
+            }
+            if (response.status === 404) {
+                throw new Error('Delete User function was not found. Deploy the Netlify function first.');
+            }
+            throw new Error(data.error || `Request failed (${response.status})`);
+        }
+
+        return data;
+    };
+
+    try {
+        const inspect = await callDeleteFunction({
+            mode: 'inspect',
+            uid: targetUid,
+        });
+
+        const productsCount = inspect.productsCount || 0;
+        const categoriesCount = inspect.categoriesCount || 0;
+        const requiresTransfer = productsCount > 0 || categoriesCount > 0;
+        const confirmMessage = requiresTransfer
+            ? `Delete "${targetEmail}"?\n\nThis user owns ${productsCount} products and ${categoriesCount} categories.\n\nThose records will be transferred to your admin account (${currentUserEmail || currentUserUid}) before the Firebase login is deleted.`
+            : `Delete "${targetEmail}"?\n\nThis will remove the Firebase login and the user profile from User Management.`;
+
+        const confirmed = await win95Confirm('Delete User', `${confirmMessage}\n\nContinue?`);
+        if (!confirmed) return;
+
+        if (triggerButton) {
+            triggerButton.textContent = 'Deleting...';
+        }
+
+        const result = await callDeleteFunction({
+            mode: 'delete',
+            uid: targetUid,
+            transferToUid: requiresTransfer ? currentUserUid : '',
+        });
+
+        if (adminViewOwnerUid === targetUid) {
+            adminViewOwnerUid = '';
+            adminViewOwnerEmail = '';
+            setCategoryAuth(currentUserUid, currentUserRole, adminViewOwnerUid);
+        }
+
+        if (currentUserRole === 'admin') {
+            startFirestoreListener();
+            startCategoriesListener();
+            setStatus(buildStatusText());
+        }
+
+        alert(
+            result.transferred
+                ? `Deleted "${targetEmail}".\n\nTransferred ${result.productsCount} products and ${result.categoriesCount} categories to ${result.transferToEmail || 'your admin account'}.`
+                : `Deleted "${targetEmail}".`
+        );
+        loadUserList();
+    } catch (err) {
+        console.error('[DeleteUser]', err);
+        alert(err?.message || 'Delete User failed.');
+    } finally {
+        if (triggerButton) {
+            triggerButton.disabled = false;
+            triggerButton.textContent = originalText || 'Delete';
+        }
     }
 }
 
@@ -1958,23 +2083,37 @@ async function repairUserByEmail() {
 
     if (!emailInput || !roleSelect || !errorEl || !button) return;
 
-    errorEl.textContent = '';
+    const setRepairMessage = (message, tone = 'error') => {
+        const colors = {
+            error: '#cc0000',
+            info: '#000080',
+            success: '#006600',
+        };
+        errorEl.textContent = message;
+        errorEl.style.color = colors[tone] || colors.error;
+    };
+
+    setRepairMessage('', 'error');
     const email = emailInput.value.trim();
     const role = roleSelect.value;
 
     if (!email) {
-        errorEl.textContent = 'Email is required.';
+        setRepairMessage('Email is required.');
         return;
     }
 
     const currentUser = auth.currentUser;
     if (!currentUser) {
-        errorEl.textContent = 'Your admin session has expired. Please sign in again.';
+        setRepairMessage('Your admin session has expired. Please sign in again.');
         return;
     }
 
     button.disabled = true;
     button.textContent = 'Repairing...';
+    setRepairMessage('Contacting repair service...', 'info');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
         const idToken = await currentUser.getIdToken();
@@ -1985,9 +2124,19 @@ async function repairUserByEmail() {
                 Authorization: `Bearer ${idToken}`,
             },
             body: JSON.stringify({ email, role }),
+            signal: controller.signal,
         });
 
-        const data = await response.json().catch(() => ({}));
+        const rawBody = await response.text();
+        let data = {};
+        if (rawBody) {
+            try {
+                data = JSON.parse(rawBody);
+            } catch {
+                data = { error: rawBody };
+            }
+        }
+
         if (!response.ok) {
             if (response.status === 501) {
                 throw new Error('Repair User needs the deployed Netlify function. The local preview server cannot run serverless functions.');
@@ -2000,14 +2149,25 @@ async function repairUserByEmail() {
 
         emailInput.value = '';
         roleSelect.value = 'client';
+        setRepairMessage(
+            data.existed
+                ? `User profile repaired for ${data.email}.`
+                : `User profile created for ${data.email}.`,
+            'success'
+        );
         alert(data.existed
             ? `User profile repaired for ${data.email}.`
             : `User profile created for ${data.email}.`);
         loadUserList();
     } catch (err) {
         console.error('[RepairUser]', err);
-        errorEl.textContent = err.message;
+        const message = err?.name === 'AbortError'
+            ? 'Repair request timed out. Check your connection or the deployed function.'
+            : (err?.message || 'Repair request failed.');
+        setRepairMessage(message);
+        alert(message);
     } finally {
+        clearTimeout(timeoutId);
         button.disabled = false;
         button.textContent = 'Repair User';
     }
@@ -2106,7 +2266,12 @@ if (userMgmtOverlay) {
     });
 }
 if (btnMigrate) btnMigrate.addEventListener('click', migrateExistingDocs);
-if (btnRepairUser) btnRepairUser.addEventListener('click', repairUserByEmail);
+if (btnRepairUser) {
+    btnRepairUser.addEventListener('click', (event) => {
+        event.preventDefault();
+        repairUserByEmail();
+    });
+}
 
 if (btnModeCatalog) btnModeCatalog.addEventListener('click', () => setAppMode('catalog'));
 if (btnModeDesigner) btnModeDesigner.addEventListener('click', () => setAppMode('designer'));
