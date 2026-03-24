@@ -12,27 +12,16 @@ function json(statusCode, body) {
     };
 }
 
-function getPrivateKey() {
-    return (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-}
-
 function getAdminApp() {
     if (getApps().length > 0) return getApps()[0];
 
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = getPrivateKey();
-
-    if (!projectId || !clientEmail || !privateKey) {
-        throw new Error('Missing Firebase Admin environment variables.');
+    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (!serviceAccount) {
+        throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable.');
     }
 
     return initializeApp({
-        credential: cert({
-            projectId,
-            clientEmail,
-            privateKey,
-        }),
+        credential: cert(JSON.parse(serviceAccount)),
     });
 }
 
