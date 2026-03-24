@@ -1950,6 +1950,69 @@ async function migrateExistingDocs() {
     }
 }
 
+async function repairUserByEmail() {
+    const emailInput = document.getElementById('repair-user-email');
+    const roleSelect = document.getElementById('repair-user-role');
+    const errorEl = document.getElementById('repair-user-error');
+    const button = document.getElementById('btn-repair-user');
+
+    if (!emailInput || !roleSelect || !errorEl || !button) return;
+
+    errorEl.textContent = '';
+    const email = emailInput.value.trim();
+    const role = roleSelect.value;
+
+    if (!email) {
+        errorEl.textContent = 'Email is required.';
+        return;
+    }
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        errorEl.textContent = 'Your admin session has expired. Please sign in again.';
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Repairing...';
+
+    try {
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch('/.netlify/functions/repair-user-by-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ email, role }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            if (response.status === 501) {
+                throw new Error('Repair User needs the deployed Netlify function. The local preview server cannot run serverless functions.');
+            }
+            if (response.status === 404) {
+                throw new Error('Repair User function was not found. Deploy the Netlify function first.');
+            }
+            throw new Error(data.error || `Request failed (${response.status})`);
+        }
+
+        emailInput.value = '';
+        roleSelect.value = 'client';
+        alert(data.existed
+            ? `User profile repaired for ${data.email}.`
+            : `User profile created for ${data.email}.`);
+        loadUserList();
+    } catch (err) {
+        console.error('[RepairUser]', err);
+        errorEl.textContent = err.message;
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Repair User';
+    }
+}
+
 if (btnUserMgmt) btnUserMgmt.addEventListener('click', openUserMgmt);
 
 const btnCreateUser = document.getElementById('btn-create-user');
@@ -2033,6 +2096,7 @@ if (btnCreateUser) {
 const btnUserMgmtClose = document.getElementById('btn-user-mgmt-close');
 const btnUserMgmtCancel = document.getElementById('btn-user-mgmt-cancel');
 const btnMigrate = document.getElementById('btn-migrate');
+const btnRepairUser = document.getElementById('btn-repair-user');
 
 if (btnUserMgmtClose) btnUserMgmtClose.addEventListener('click', closeUserMgmt);
 if (btnUserMgmtCancel) btnUserMgmtCancel.addEventListener('click', closeUserMgmt);
@@ -2042,6 +2106,7 @@ if (userMgmtOverlay) {
     });
 }
 if (btnMigrate) btnMigrate.addEventListener('click', migrateExistingDocs);
+if (btnRepairUser) btnRepairUser.addEventListener('click', repairUserByEmail);
 
 if (btnModeCatalog) btnModeCatalog.addEventListener('click', () => setAppMode('catalog'));
 if (btnModeDesigner) btnModeDesigner.addEventListener('click', () => setAppMode('designer'));

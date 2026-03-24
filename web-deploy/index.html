@@ -432,6 +432,23 @@
                 <button id="btn-migrate" class="btn" style="font-size:10px; padding:1px 6px; margin-left:4px;">Run Migration</button>
             </div>
 
+            <div style="margin-top:8px; padding:8px; border:1px solid #808080; background:#eef4ff;">
+                <div style="font-weight:bold; font-size:11px; margin-bottom:6px;">Repair User by Email</div>
+                <div class="login-field" style="margin-bottom:4px;">
+                    <label for="repair-user-email" style="font-size:10px;">Email:</label>
+                    <input type="email" id="repair-user-email" placeholder="designer1@speshal.org" style="width:100%;">
+                </div>
+                <div class="login-field" style="margin-bottom:4px;">
+                    <label for="repair-user-role" style="font-size:10px;">Role if missing:</label>
+                    <select id="repair-user-role" style="width:100%; font-family:Tahoma,Arial,sans-serif; font-size:11px; border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #dfdfdf; border-bottom:1px solid #dfdfdf; padding:2px 4px; background:#fff;">
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="login-error" id="repair-user-error" style="font-size:10px;"></div>
+                <button id="btn-repair-user" class="btn" style="margin-top:4px;">Repair User</button>
+            </div>
+
             <div class="login-btn-row" style="margin-top:8px;">
                 <button class="btn" id="btn-user-mgmt-cancel">Close</button>
             </div>

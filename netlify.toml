@@ -1,6 +1,9 @@
 [build]
   publish = "web-deploy"
 
+[functions]
+  directory = "netlify/functions"
+
 [[headers]]
   for = "/css/*"
   [headers.values]
