@@ -2,7 +2,6 @@
 //  FUNCTIONAL MENU BAR
 // ================================================================
 import { t } from './i18n.js';
-import { toggleCategoryPanel } from './categories.js';
 
 let activeDropdown = null;
 let menuActions = {};
@@ -13,6 +12,9 @@ const menuStructure = {
     file: () => [
         { label: t('menuNewProduct'), action: 'newProduct' },
         { type: 'separator' },
+        { label: t('menuImportCsv'), action: 'importCsv' },
+        { label: t('menuExportCsv'), action: 'exportCsv' },
+        { type: 'separator' },
         { label: t('menuSignOut'), action: 'signOut' },
     ],
     edit: () => [
@@ -21,8 +23,8 @@ const menuStructure = {
         { label: t('menuPreferences'), action: 'preferences' },
     ],
     view: () => [
-        { label: t('menuCategories'), action: 'toggleCategories' },
-        { label: t('menuReports'), action: 'showReports' },
+        { label: t('menuCatalogMode'), action: 'catalogMode' },
+        { label: t('menuDesignerMode'), action: 'designerMode' },
         { type: 'separator' },
         { label: t('menuRefresh'), action: 'refresh' },
         { type: 'separator' },

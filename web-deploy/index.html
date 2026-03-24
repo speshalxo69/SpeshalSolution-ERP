@@ -67,6 +67,10 @@
             <span class="menu-item" data-menu="help" id="menu-help">Help</span>
         </div>
         <div class="menu-bar-right">
+            <div class="mode-switcher" id="mode-switcher">
+                <button class="mode-btn active" id="btn-mode-catalog" data-app-mode="catalog">Catalog</button>
+                <button class="mode-btn" id="btn-mode-designer" data-app-mode="designer">Designer</button>
+            </div>
             <div class="lang-switcher">
                 <button class="lang-btn active" data-lang="en">EN</button>
                 <button class="lang-btn" data-lang="fr">FR</button>
@@ -207,6 +211,10 @@
                     <span class="section-label" id="t-section-db">Live Database</span>
                     <span id="product-count">Connecting&hellip;</span>
                 </div>
+                <div class="designer-banner" id="designer-banner" style="display:none;">
+                    <div class="designer-banner-title" id="t-designer-banner-title">Designer Mode</div>
+                    <div class="designer-banner-body" id="t-designer-banner-body">Download originals, drop in your edited images, and keep both versions of every product photo.</div>
+                </div>
 
                 <!-- Search & Filter Bar -->
                 <div class="search-bar">
@@ -214,20 +222,40 @@
                         <input type="text" id="search-text" placeholder="Search by name, SKU...">
                     </div>
                     <div class="search-group">
-                        <label>Category:</label>
+                        <label id="t-search-category">Category:</label>
                         <select id="search-cat">
                             <option value="">All Products</option>
                             <option value="__uncategorized__">Uncategorized</option>
                         </select>
                     </div>
+                    <div class="search-group" id="designer-search-group">
+                        <label id="t-search-image-status">Image:</label>
+                        <select id="search-image-status">
+                            <option value="">All Images</option>
+                            <option value="raw">Raw Only</option>
+                            <option value="edited">Edited Only</option>
+                        </select>
+                    </div>
                     <div class="search-group">
-                        <label>Min:</label>
+                        <label id="t-search-missing-detail">Missing:</label>
+                        <select id="search-missing-detail">
+                            <option value="">All Details</option>
+                            <option value="incomplete">Incomplete</option>
+                            <option value="name">No Name</option>
+                            <option value="sku">No SKU</option>
+                            <option value="price">No Price</option>
+                            <option value="description">No Description</option>
+                        </select>
+                    </div>
+                    <div class="search-group">
+                        <label id="t-search-min">Min:</label>
                         <input type="number" id="search-price-min" min="0" step="1">
                     </div>
                     <div class="search-group">
-                        <label>Max:</label>
+                        <label id="t-search-max">Max:</label>
                         <input type="number" id="search-price-max" min="0" step="1">
                     </div>
+                    <button id="btn-download-filtered-originals" style="display:none;">Download Filtered Originals</button>
                     <button id="search-clear">Clear Filters</button>
                     <span id="search-result-count"></span>
                 </div>
@@ -262,12 +290,33 @@
 
 <!-- EDIT MODAL -->
 <div id="edit-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:8888; align-items:center; justify-content:center;">
-    <div class="login-dialog" style="width:360px;">
+    <div class="login-dialog edit-dialog">
         <div class="login-title-bar">
             <span id="t-edit-title">Edit Product</span>
             <button id="btn-edit-close" class="title-btn" style="background:#d4d0c8;">&#x2715;</button>
         </div>
         <div class="login-body" style="text-align:left;">
+            <div class="edit-image-tools">
+                <div class="edit-image-toolbar">
+                    <span class="edit-image-status is-raw" id="edit-image-status-label">Raw</span>
+                    <button type="button" class="btn" id="btn-edit-download-original">Download Original</button>
+                    <button type="button" class="btn" id="btn-edit-download-edited">Download Edited</button>
+                    <button type="button" class="btn" id="btn-edit-upload-image">Upload Edited</button>
+                    <button type="button" class="btn edit-image-delete-btn" id="btn-edit-delete-edited">Delete Edited</button>
+                    <input type="file" id="edit-image-input" accept="image/*" style="display:none;">
+                </div>
+                <div class="edit-image-compare">
+                    <div class="edit-image-panel">
+                        <div class="edit-image-caption" id="t-image-original">Original</div>
+                        <img id="edit-original-preview" alt="Original product image">
+                    </div>
+                    <div class="edit-image-panel">
+                        <div class="edit-image-caption" id="t-image-current">Current Live Image</div>
+                        <img id="edit-current-preview" alt="Current product image">
+                    </div>
+                </div>
+                <div class="edit-image-meta" id="edit-image-meta">This product has not been edited yet.</div>
+            </div>
             <div class="login-field">
                 <label for="e-name" id="t-edit-label-name">Product Name:</label>
                 <input type="text" id="e-name" maxlength="120">

@@ -182,13 +182,27 @@ export function getCategoryName(id) {
 }
 
 // ── Render category tree in the panel ──
-let categoryPanelVisible = false;
+let categoryPanelVisible = true;
+
+function getCategoryPanelElement() {
+    return document.getElementById('category-panel');
+}
+
+export function setCategoryPanelVisible(visible) {
+    categoryPanelVisible = !!visible;
+    const panel = getCategoryPanelElement();
+    if (panel) panel.style.display = categoryPanelVisible ? 'block' : 'none';
+    if (categoryPanelVisible) renderCategoryTree();
+}
+
+export function showCategoryPanel() {
+    setCategoryPanelVisible(true);
+}
 
 export function toggleCategoryPanel() {
-    categoryPanelVisible = !categoryPanelVisible;
-    const panel = document.getElementById('category-panel');
-    if (panel) panel.style.display = categoryPanelVisible ? '' : 'none';
-    if (categoryPanelVisible) renderCategoryTree();
+    const panel = getCategoryPanelElement();
+    if (panel) categoryPanelVisible = getComputedStyle(panel).display !== 'none';
+    setCategoryPanelVisible(!categoryPanelVisible);
 }
 
 export function isCategoryPanelVisible() { return categoryPanelVisible; }

@@ -43,6 +43,20 @@
     font-size: 11px; padding: 2px 4px; outline: none;
     max-width: 130px;
 }
+#search-image-status {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff; font-family: Tahoma, Arial, sans-serif;
+    font-size: 11px; padding: 2px 4px; outline: none;
+    min-width: 96px;
+}
+#search-missing-detail {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
+    background: #ffffff; font-family: Tahoma, Arial, sans-serif;
+    font-size: 11px; padding: 2px 4px; outline: none;
+    min-width: 120px;
+}
 #search-price-min, #search-price-max { width: 60px; }
 
 #search-clear {
@@ -58,6 +72,23 @@
     border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
 }
 
+#btn-download-filtered-originals {
+    background: #d4d0c8;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #808080; border-bottom: 1px solid #808080;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 10px; padding: 2px 8px; cursor: pointer; color: #000080;
+    align-self: flex-end;
+}
+#btn-download-filtered-originals:active {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+}
+#btn-download-filtered-originals:disabled {
+    color: #808080;
+    cursor: wait;
+}
+
 #search-result-count {
     font-size: 10px;
     color: #000080;
@@ -71,7 +102,7 @@
 @media (max-width: 640px) {
     .search-bar { flex-direction: column; align-items: stretch; }
     #search-text { width: 100%; }
-    #search-cat { max-width: 100%; width: 100%; }
+    #search-cat, #search-image-status, #search-missing-detail { max-width: 100%; width: 100%; }
     .search-bar .search-group { flex-direction: column; }
     #search-price-min, #search-price-max { width: 100%; }
 }

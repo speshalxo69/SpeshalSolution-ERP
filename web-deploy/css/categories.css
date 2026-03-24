@@ -2,7 +2,7 @@
    CATEGORIES PANEL — Tree view
    ================================================================ */
 #category-panel {
-    display: none;
+    display: block;
     margin-bottom: 6px;
 }
 

@@ -14,5 +14,5 @@ export const CLOUDINARY_CLOUD  = 'dfagopgyv';
 export const CLOUDINARY_PRESET = 'SpeshalSolution';
 
 export const LOCAL_USERS = [
-    { username: 'ss', password: 'speshal' }
+    { username: 'ss', password: 'speshal', role: 'admin' }
 ];
