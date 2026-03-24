@@ -121,6 +121,7 @@ export function win95Input(title, label, defaultValue = '') {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
+        overlay.style.zIndex = '10100';
         overlay.innerHTML = `
             <div class="login-dialog" style="width:280px;">
                 <div class="login-title-bar">
@@ -167,6 +168,7 @@ export function win95Confirm(title, message) {
     return new Promise((resolve) => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
+        overlay.style.zIndex = '10100';
         overlay.innerHTML = `
             <div class="login-dialog" style="width:300px;">
                 <div class="login-title-bar">
