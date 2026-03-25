@@ -9,9 +9,8 @@ body {
     font-size: 11px;
     height: 100vh;
     overflow: hidden;
-    padding: 16px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
 }
 
@@ -33,8 +32,8 @@ body.rtl .field-row { flex-direction: row-reverse; }
     background: #d4d0c8;
     border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
     border-right: 2px solid #404040; border-bottom: 2px solid #404040;
-    width: 100%;
-    height: calc(100vh - 32px);
+    width: 90vw;
+    height: 90vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
