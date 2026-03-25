@@ -7,8 +7,12 @@ body {
     background-color: #008080;
     font-family: Tahoma, 'MS Sans Serif', Arial, sans-serif;
     font-size: 11px;
-    min-height: 100vh;
-    padding: 8px;
+    height: 100vh;
+    overflow: hidden;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
 }
 
 @media (max-width: 600px) {
@@ -29,7 +33,11 @@ body.rtl .field-row { flex-direction: row-reverse; }
     background: #d4d0c8;
     border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
     border-right: 2px solid #404040; border-bottom: 2px solid #404040;
-    min-height: calc(100vh - 16px);
+    width: 100%;
+    height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .title-bar {

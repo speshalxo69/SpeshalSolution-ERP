@@ -1,9 +1,9 @@
 /* ================================================================
    LAYOUT — Content area, panels, responsive
    ================================================================ */
-.content-area { display: flex; gap: 6px; padding: 6px; }
-.left-panel  { width: 340px; flex-shrink: 0; }
-.right-panel { flex: 1; min-width: 0; }
+.content-area { display: flex; gap: 6px; padding: 6px; flex: 1; min-height: 0; overflow: hidden; }
+.left-panel  { width: 340px; flex-shrink: 0; overflow-y: auto; }
+.right-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── Menu Bar ── */
 .menu-bar {
