@@ -13,9 +13,10 @@ function json(statusCode, body) {
 
 function getAdminApp(env) {
     if (getApps().length > 0) return getApps()[0];
-    const serviceAccount = env.FIREBASE_SERVICE_ACCOUNT;
+    let serviceAccount = env.FIREBASE_SERVICE_ACCOUNT;
     if (!serviceAccount) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable.');
-    return initializeApp({ credential: cert(JSON.parse(serviceAccount)) });
+    if (typeof serviceAccount === 'string') serviceAccount = JSON.parse(serviceAccount);
+    return initializeApp({ credential: cert(serviceAccount) });
 }
 
 async function requireAdmin(request, env) {
