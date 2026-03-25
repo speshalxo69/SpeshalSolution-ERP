@@ -11,7 +11,9 @@
 .gallery-scroll {
     border-top: 1px solid #808080; border-left: 1px solid #808080;
     border-right: 1px solid #dfdfdf; border-bottom: 1px solid #dfdfdf;
-    background: #ffffff; padding: 4px; overflow-y: auto; height: 540px;
+    background: #ffffff; padding: 4px; overflow-y: auto;
+    height: calc(100vh - 160px);
+    min-height: 300px;
 }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
 .gallery-empty { grid-column: 1 / -1; color: #808080; padding: 24px; text-align: center; }
@@ -20,7 +22,7 @@ body.designer-mode .gallery-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
 }
-body.designer-mode .gallery-scroll { height: 620px; }
+body.designer-mode .gallery-scroll { height: calc(100vh - 160px); }
 
 /* ── Product Cards ── */
 .product-card {
