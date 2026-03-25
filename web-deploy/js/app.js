@@ -758,7 +758,7 @@ function syncModeUi({ rerender = true, suppressStatus = false } = {}) {
     if (btnModeDesigner) btnModeDesigner.classList.toggle('active', currentAppMode === 'designer');
     if (designerBanner) designerBanner.style.display = currentAppMode === 'designer' ? '' : 'none';
     if (sectionDb) sectionDb.textContent = currentAppMode === 'designer' ? t('sectionDesigner') : t('sectionDb');
-    if (!suppressStatus && mainWindow.style.display === 'block') {
+    if (!suppressStatus && mainWindow.style.display === 'flex') {
         setStatus(currentAppMode === 'designer' ? buildDesignerStatusText() : buildStatusText());
     }
     updateBulkDownloadButtonState();
@@ -767,7 +767,7 @@ function syncModeUi({ rerender = true, suppressStatus = false } = {}) {
 
 function showUnlockedUi() {
     loginScreen.classList.add('hidden');
-    mainWindow.style.display = 'block';
+    mainWindow.style.display = 'flex';
     userName.textContent = getCurrentUserLabel();
     applyRoleUi();
     currentAppMode = getDefaultModeForRole();
@@ -2340,7 +2340,7 @@ document.addEventListener('keydown', (event) => {
         setAppMode('catalog');
         fName.focus();
     }
-    if (event.ctrlKey && event.key === 's' && mainWindow.style.display === 'block' && currentAppMode === 'catalog') {
+    if (event.ctrlKey && event.key === 's' && mainWindow.style.display === 'flex' && currentAppMode === 'catalog') {
         event.preventDefault();
         btnSave.click();
     }
