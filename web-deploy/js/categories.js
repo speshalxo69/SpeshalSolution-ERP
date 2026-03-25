@@ -95,9 +95,9 @@ export async function addCategory(name, parentId = null) {
         });
     } catch (err) {
         if (err.code === 'permission-denied') {
-            alert('Cannot save category: Firestore rules block the "categories" collection.\n\nIn Firebase Console → Firestore → Rules, add:\n\nmatch /categories/{doc} {\n  allow read, write: if request.auth != null;\n}');
+            await win95Alert('Category Error', 'Cannot save category: Firestore rules block the "categories" collection.\n\nIn Firebase Console -> Firestore -> Rules, add:\n\nmatch /categories/{doc} {\n  allow read, write: if request.auth != null;\n}');
         } else {
-            alert('Error saving category: ' + err.message);
+            await win95Alert('Category Error', 'Error saving category: ' + err.message);
         }
         throw err;
     }
@@ -160,6 +160,44 @@ export function win95Input(title, label, defaultValue = '') {
             if (e.key === 'Escape') dismiss();
         });
         overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+    });
+}
+
+// ── Win95-style alert dialog (replaces alert()) ──
+export function win95Alert(title, message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.zIndex = '10100';
+        overlay.innerHTML = `
+            <div class="login-dialog" style="width:300px;">
+                <div class="login-title-bar">
+                    <span>${title}</span>
+                    <button class="title-btn w95-alert-x">\u2715</button>
+                </div>
+                <div class="login-body" style="text-align:left;">
+                    <div style="margin-bottom:14px; font-size:11px; line-height:1.5; white-space:pre-line;">${message}</div>
+                    <div class="login-btn-row" style="justify-content:flex-end; gap:6px;">
+                        <button class="btn w95-alert-ok" style="min-width:70px;">OK</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        const close = () => {
+            overlay.remove();
+            resolve();
+        };
+
+        const ok = overlay.querySelector('.w95-alert-ok');
+        const closeX = overlay.querySelector('.w95-alert-x');
+
+        ok.focus();
+        ok.addEventListener('click', close);
+        closeX.addEventListener('click', close);
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) close();
+        });
     });
 }
 

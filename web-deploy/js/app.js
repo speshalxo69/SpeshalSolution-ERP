@@ -7,7 +7,7 @@ import { t, setLang } from './i18n.js';
 import { setStatus, showMsg, hideMsg, formatBytes, placeholderSvg } from './helpers.js';
 import {
     startCategoriesListener, stopCategoriesListener, showCategoryPanel, addCategory,
-    getCategories, getCategoryName, onCategoriesChange, populateCategoryDropdowns, win95Input, win95Confirm, setCategoryAuth,
+    getCategories, getCategoryName, onCategoriesChange, populateCategoryDropdowns, win95Input, win95Confirm, win95Alert, setCategoryAuth,
 } from './categories.js';
 import { initSearch, setProducts, onFilterChange, updateSearchCategories } from './search.js';
 import { initMenuBar, setMenuActions, showAboutDialog, showPreferencesDialog, showShortcutsDialog } from './menu-bar.js';
@@ -1692,7 +1692,7 @@ async function deleteProduct(productId, productName) {
         setStatus(t('productDeleted'));
     } catch (err) {
         console.error('[Delete]', err);
-        alert(`Error: ${err.message}`);
+        await win95Alert('Delete Product', `Error: ${err.message}`);
     }
 }
 
@@ -1891,9 +1891,9 @@ async function loadUserList() {
                     } catch (err) {
                         select.value = role;
                         if (err.code === 'permission-denied') {
-                            alert('Error updating role: Firestore rules are blocking admin writes to the users collection.\n\nDeploy the firestore.rules file so admins can manage user roles.');
+                            await win95Alert('Role Update Error', 'Firestore rules are blocking admin writes to the users collection.\n\nDeploy the firestore.rules file so admins can manage user roles.');
                         } else {
-                            alert(`Error updating role: ${err.message}`);
+                            await win95Alert('Role Update Error', `Error updating role: ${err.message}`);
                         }
                     }
                 });
@@ -1927,14 +1927,14 @@ async function loadUserList() {
 async function deleteUserAccount(targetUid, targetData = {}, triggerButton = null) {
     if (currentUserRole !== 'admin') return;
     if (!targetUid || targetUid === currentUserUid) {
-        alert('You cannot delete your own account from User Management.');
+        await win95Alert('Delete User', 'You cannot delete your own account from User Management.');
         return;
     }
 
     const targetEmail = targetData.email || targetUid;
     const currentUser = auth.currentUser;
     if (!currentUser) {
-        alert('Your admin session has expired. Please sign in again.');
+        await win95Alert('Delete User', 'Your admin session has expired. Please sign in again.');
         return;
     }
 
@@ -1988,7 +1988,8 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
             setStatus(buildStatusText());
         }
 
-        alert(
+        await win95Alert(
+            'Delete User',
             result.transferred
                 ? `Deleted "${targetEmail}".\n\nTransferred ${result.productsCount} products and ${result.categoriesCount} categories to ${result.transferToEmail || 'your admin account'}.`
                 : `Deleted "${targetEmail}".`
@@ -1996,7 +1997,7 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
         loadUserList();
     } catch (err) {
         console.error('[DeleteUser]', err);
-        alert(err?.message || 'Delete User failed.');
+        await win95Alert('Delete User', err?.message || 'Delete User failed.');
     } finally {
         if (triggerButton) {
             triggerButton.disabled = false;
@@ -2086,14 +2087,14 @@ async function migrateExistingDocs() {
             }
         }
 
-        alert(`Migration complete! ${migrated} documents tagged with your admin account.`);
+        await win95Alert('Migration', `Migration complete! ${migrated} documents tagged with your admin account.`);
         if (currentUserRole === 'admin') {
             startFirestoreListener();
             startCategoriesListener();
         }
     } catch (err) {
         console.error('[Migration]', err);
-        alert(`Migration error: ${err.message}`);
+        await win95Alert('Migration Error', `Migration error: ${err.message}`);
     }
 }
 
@@ -2151,7 +2152,8 @@ async function repairUserByEmail() {
                 : `User profile created for ${data.email}.`,
             'success'
         );
-        alert(data.existed
+        await win95Alert('Repair User',
+            data.existed
             ? `User profile repaired for ${data.email}.`
             : `User profile created for ${data.email}.`);
         loadUserList();
@@ -2159,7 +2161,7 @@ async function repairUserByEmail() {
         console.error('[RepairUser]', err);
         const message = err?.message || 'Repair request failed.';
         setRepairMessage(message);
-        alert(message);
+        await win95Alert('Repair User', message);
     } finally {
         button.disabled = false;
         button.textContent = 'Repair User';
@@ -2216,7 +2218,7 @@ if (btnCreateUser) {
             await deleteApp(secondarySession.app);
             secondarySession = null;
 
-            alert(`User "${email}" created with role "${role}".`);
+            await win95Alert('Create User', `User "${email}" created with role "${role}".`);
             loadUserList();
         } catch (err) {
             console.error('[CreateUser]', err);
