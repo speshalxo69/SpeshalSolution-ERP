@@ -48,7 +48,9 @@ async function verifyIdToken(token, projectId) {
         issuer: `https://securetoken.google.com/${projectId}`,
         audience: projectId,
     });
-    return payload;
+    const uid = payload.user_id || payload.sub || '';
+    if (!uid) throw new Error('Verified token did not include a Firebase uid.');
+    return { ...payload, uid };
 }
 
 // ── Firestore REST helpers ────────────────────────────────────────────────────
