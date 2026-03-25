@@ -1946,7 +1946,7 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
 
     const callDeleteFunction = async (payload) => {
         const idToken = await currentUser.getIdToken();
-        const response = await fetch('/.netlify/functions/delete-user-account', {
+        const response = await fetch('/api/delete-user-account', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1966,11 +1966,8 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
         }
 
         if (!response.ok) {
-            if (response.status === 501) {
-                throw new Error('Delete User needs the deployed Netlify function. The local preview server cannot run serverless functions.');
-            }
             if (response.status === 404) {
-                throw new Error('Delete User function was not found. Deploy the Netlify function first.');
+                throw new Error('Delete User function was not found.');
             }
             throw new Error(data.error || `Request failed (${response.status})`);
         }
@@ -2117,7 +2114,7 @@ async function repairUserByEmail() {
 
     try {
         const idToken = await currentUser.getIdToken();
-        const response = await fetch('/.netlify/functions/repair-user-by-email', {
+        const response = await fetch('/api/repair-user-by-email', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

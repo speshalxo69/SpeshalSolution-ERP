@@ -1,5 +1,8 @@
 name = "speshalerpsolution"
+main = "src/worker.js"
 compatibility_date = "2025-03-25"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./web-deploy"
+binding = "ASSETS"
