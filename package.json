@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "firebase-admin": "^13.6.0"
+    "jose": "^5.9.6"
   }
 }
