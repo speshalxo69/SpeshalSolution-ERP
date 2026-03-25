@@ -1,7 +1,7 @@
 import { CLOUDINARY_CLOUD, CLOUDINARY_PRESET } from './config.js';
 import {
     auth, db, createSecondaryAuthSession, deleteApp, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
-    collection, addDoc, setDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, where, getDoc, getDocs,
+    collection, addDoc, setDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp, where, getDoc, getDocs,
 } from './firebase-init.js';
 import { t, setLang } from './i18n.js';
 import { setStatus, showMsg, hideMsg, formatBytes, placeholderSvg } from './helpers.js';
@@ -258,12 +258,16 @@ function getImageStatusKey(product) {
     return getImageStatus(product) === 'edited' ? 'imageStatusEdited' : 'imageStatusRaw';
 }
 
-function buildInitialImageFields(imageUrl) {
+function buildInitialImageFields(imageAsset) {
+    const imageUrl = typeof imageAsset === 'string' ? imageAsset : (imageAsset?.secureUrl || '');
+    const originalImagePublicId = typeof imageAsset === 'string' ? '' : (imageAsset?.publicId || '');
     return {
         imageUrl,
         originalImageUrl: imageUrl,
+        originalImagePublicId,
         currentImageUrl: imageUrl,
         editedImageUrl: '',
+        editedImagePublicId: '',
         imageStatus: 'raw',
     };
 }
@@ -964,7 +968,11 @@ async function uploadImageFile(file, folder, onProgress) {
         });
         xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(JSON.parse(xhr.responseText).secure_url);
+                const data = JSON.parse(xhr.responseText);
+                resolve({
+                    secureUrl: data.secure_url || '',
+                    publicId: data.public_id || '',
+                });
                 return;
             }
             reject(new Error(`Cloudinary error: ${xhr.status} ${xhr.statusText}`));
@@ -1012,12 +1020,14 @@ async function handleEditedImageSelection(productId, file) {
     setProducts(allProducts);
     refreshOpenEditImagePanel();
     try {
-        const editedUrl = await uploadImageFile(file, 'products/edited');
+        const editedAsset = await uploadImageFile(file, 'products/edited');
         await updateDoc(doc(db, 'products', productId), {
             originalImageUrl: getOriginalImageUrl(productRecord.data),
-            editedImageUrl: editedUrl,
-            currentImageUrl: editedUrl,
-            imageUrl: editedUrl,
+            originalImagePublicId: productRecord.data.originalImagePublicId || '',
+            editedImageUrl: editedAsset.secureUrl,
+            editedImagePublicId: editedAsset.publicId,
+            currentImageUrl: editedAsset.secureUrl,
+            imageUrl: editedAsset.secureUrl,
             imageStatus: 'edited',
             editedBy: getCurrentUserLabel(),
             editedAt: serverTimestamp(),
@@ -1038,20 +1048,20 @@ async function handleEditedImageSelection(productId, file) {
 async function deleteEditedImage(productId) {
     const productRecord = getProductById(productId);
     if (!productRecord) return;
-    const originalImageUrl = getOriginalImageUrl(productRecord.data);
-    const editedImageUrl = getEditedImageUrl(productRecord.data);
-    if (!editedImageUrl) return;
+    if (!getEditedImageUrl(productRecord.data)) return;
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        await win95Alert(t('btnDeleteEdited'), 'Your session has expired. Please sign in again.');
+        return;
+    }
     const ok = await win95Confirm(t('btnDeleteEdited'), `${t('deleteEditedConfirm')}\n\n"${productRecord.data.name || 'product'}"`);
     if (!ok) return;
     try {
-        await updateDoc(doc(db, 'products', productId), {
-            originalImageUrl,
-            editedImageUrl: null,
-            currentImageUrl: originalImageUrl,
-            imageUrl: originalImageUrl,
-            imageStatus: 'raw',
-            editedBy: null,
-            editedAt: null,
+        await callWorkerApi('/api/delete-product-edited-image', {
+            productId,
+        }, currentUser, {
+            missingRouteMessage: 'Delete Edited Image route was not found. Redeploy the Cloudflare worker and try again.',
+            timeoutMessage: 'Delete Edited Image timed out. Check your connection or redeploy the Cloudflare worker.',
         });
         setStatus(t('imageDeleted'));
         showMsg(t('imageDeleted'), 'success');
@@ -1639,14 +1649,14 @@ btnSave.addEventListener('click', async () => {
     setStatus(t('uploadingImg'));
     showMsg(t('uploadingImg'), 'info');
     try {
-        const imageUrl = await uploadImageFile(selectedFile, 'products/originals', (percent) => {
+        const imageAsset = await uploadImageFile(selectedFile, 'products/originals', (percent) => {
             progressFill.style.width = `${Math.round(percent * 0.8)}%`;
         });
         progressFill.style.width = '90%';
         setStatus(t('savingRecord'));
         showMsg(t('savingRecord'), 'info');
         const docData = {
-            ...buildInitialImageFields(imageUrl),
+            ...buildInitialImageFields(imageAsset),
             name: fName.value.trim(),
             description: fDesc.value.trim(),
             uploadedBy: getCurrentUserLabel(),
@@ -1688,8 +1698,19 @@ async function deleteProduct(productId, productName) {
     const ok = await win95Confirm(t('btnDelete'), `${t('deleteConfirm')}\n\n"${productName}"`);
     if (!ok) return;
     try {
-        await deleteDoc(doc(db, 'products', productId));
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            await win95Alert('Delete Product', 'Your session has expired. Please sign in again.');
+            return;
+        }
+        await callWorkerApi('/api/delete-product', {
+            productId,
+        }, currentUser, {
+            missingRouteMessage: 'Delete Product route was not found. Redeploy the Cloudflare worker and try again.',
+            timeoutMessage: 'Delete Product timed out. Check your connection or redeploy the Cloudflare worker.',
+        });
         setStatus(t('productDeleted'));
+        showMsg(t('productDeleted'), 'success');
     } catch (err) {
         console.error('[Delete]', err);
         await win95Alert('Delete Product', `Error: ${err.message}`);

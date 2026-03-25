@@ -119,6 +119,8 @@ async function fsPatch(projectId, token, collection, docId, fields) {
     for (const [k, v] of Object.entries(fields)) {
         if (typeof v === 'string') firestoreFields[k] = { stringValue: v };
         else if (typeof v === 'number') firestoreFields[k] = { integerValue: String(v) };
+        else if (typeof v === 'boolean') firestoreFields[k] = { booleanValue: v };
+        else if (v === null) continue;
         else if (v && typeof v === 'object' && v._type === 'timestamp') {
             firestoreFields[k] = { timestampValue: new Date().toISOString() };
         }
@@ -180,6 +182,11 @@ function json(statusCode, body) {
     });
 }
 
+function getBearerToken(request) {
+    const authHeader = request.headers.get('Authorization') || '';
+    return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+}
+
 function getServiceAccount(env) {
     let sa = env.FIREBASE_SERVICE_ACCOUNT;
     if (!sa) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT environment variable.');
@@ -187,22 +194,115 @@ function getServiceAccount(env) {
     return sa;
 }
 
-async function requireAdmin(request, env) {
-    const authHeader = request.headers.get('Authorization') || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+function getCloudinaryConfig(env) {
+    const cloudName = String(env.CLOUDINARY_CLOUD_NAME || 'dfagopgyv').trim();
+    const apiKey = String(env.CLOUDINARY_API_KEY || '').trim();
+    const apiSecret = String(env.CLOUDINARY_API_SECRET || '').trim();
+    if (!cloudName) throw new Error('Missing Cloudinary cloud name.');
+    if (!apiKey || !apiSecret) throw new Error('Missing Cloudinary API credentials.');
+    return { cloudName, apiKey, apiSecret };
+}
+
+async function sha1Hex(value) {
+    const data = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-1', data);
+    return Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+function deriveCloudinaryPublicId(url, cloudName = '') {
+    if (!url) return '';
+    try {
+        const parsed = new URL(url);
+        if (cloudName && !parsed.hostname.includes(cloudName)) return '';
+        const pathParts = parsed.pathname.split('/').filter(Boolean);
+        const uploadIndex = pathParts.indexOf('upload');
+        if (uploadIndex === -1) return '';
+
+        let assetParts = pathParts.slice(uploadIndex + 1);
+        const versionIndex = assetParts.findIndex(part => /^v\d+$/.test(part));
+        if (versionIndex >= 0) assetParts = assetParts.slice(versionIndex + 1);
+        if (assetParts.length === 0) return '';
+
+        assetParts[assetParts.length - 1] = assetParts[assetParts.length - 1].replace(/\.[^.]+$/, '');
+        return assetParts.join('/');
+    } catch {
+        return '';
+    }
+}
+
+function resolveCloudinaryPublicId(preferredId, fallbackUrl, cloudName) {
+    return String(preferredId || '').trim() || deriveCloudinaryPublicId(fallbackUrl, cloudName);
+}
+
+async function deleteCloudinaryAsset(env, publicId) {
+    if (!publicId) return { deleted: false, result: 'skipped' };
+
+    const { cloudName, apiKey, apiSecret } = getCloudinaryConfig(env);
+    const timestamp = Math.floor(Date.now() / 1000);
+    const signature = await sha1Hex(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`);
+    const body = new URLSearchParams();
+    body.set('public_id', publicId);
+    body.set('timestamp', String(timestamp));
+    body.set('api_key', apiKey);
+    body.set('signature', signature);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(`Cloudinary destroy failed: ${response.status} ${JSON.stringify(data)}`);
+    }
+
+    const result = String(data.result || '').toLowerCase();
+    if (!['ok', 'not found', 'already deleted'].includes(result)) {
+        throw new Error(`Cloudinary destroy returned "${data.result || 'unknown'}" for ${publicId}.`);
+    }
+
+    return { deleted: result === 'ok', result };
+}
+
+async function requireUser(request, env) {
+    const token = getBearerToken(request);
     if (!token) return { error: json(401, { error: 'Missing bearer token.' }) };
 
     const sa = getServiceAccount(env);
     const decoded = await verifyIdToken(token, sa.project_id);
     const accessToken = await getAccessToken(sa);
-
     const callerDoc = await fsGet(sa.project_id, accessToken, 'users', decoded.uid);
-    const callerData = parseFirestoreDoc(callerDoc);
+    const callerData = parseFirestoreDoc(callerDoc) || {};
+
+    return {
+        sa,
+        accessToken,
+        decoded,
+        projectId: sa.project_id,
+        callerDoc,
+        callerData,
+        callerRole: callerData.role || 'client',
+    };
+}
+
+async function requireAdmin(request, env) {
+    const ctx = await requireUser(request, env);
+    if (ctx.error) return ctx;
+
+    const { callerData } = ctx;
     if (!callerData || callerData.role !== 'admin') {
         return { error: json(403, { error: 'Admin access required.' }) };
     }
 
-    return { sa, accessToken, decoded, projectId: sa.project_id };
+    return ctx;
+}
+
+function canManageProduct(callerRole, callerUid, productData) {
+    if (!callerUid || !productData) return false;
+    return callerRole === 'admin' || callerRole === 'designer' || productData.ownerUid === callerUid;
 }
 
 // ── Delete User ───────────────────────────────────────────────────────────────
@@ -337,6 +437,128 @@ async function handleRepairUser(request, env) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+function getProductAssetIds(productData, env) {
+    const cloudName = String(env.CLOUDINARY_CLOUD_NAME || 'dfagopgyv').trim();
+    const originalPublicId = resolveCloudinaryPublicId(
+        productData?.originalImagePublicId,
+        productData?.originalImageUrl || productData?.imageUrl || '',
+        cloudName
+    );
+    const editedPublicId = resolveCloudinaryPublicId(
+        productData?.editedImagePublicId,
+        productData?.editedImageUrl || '',
+        cloudName
+    );
+    return { originalPublicId, editedPublicId };
+}
+
+async function deleteProductAssets(env, productData, options = {}) {
+    const { editedOnly = false } = options;
+    const { originalPublicId, editedPublicId } = getProductAssetIds(productData, env);
+    const assetIds = editedOnly ? [editedPublicId] : [editedPublicId, originalPublicId];
+    const uniqueAssetIds = [...new Set(assetIds.filter(Boolean))];
+    const results = [];
+
+    for (const publicId of uniqueAssetIds) {
+        results.push({
+            publicId,
+            ...(await deleteCloudinaryAsset(env, publicId)),
+        });
+    }
+
+    return results;
+}
+
+async function handleDeleteProduct(request, env) {
+    if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
+    let payload;
+    try { payload = JSON.parse(await request.text() || '{}'); }
+    catch { return json(400, { error: 'Invalid JSON body.' }); }
+
+    const productId = String(payload.productId || '').trim();
+    if (!productId) return json(400, { error: 'Product id is required.' });
+
+    let ctx;
+    try { ctx = await requireUser(request, env); if (ctx.error) return ctx.error; }
+    catch (e) { return json(401, { error: e.message || 'Invalid session.' }); }
+
+    const { accessToken, decoded, projectId, callerRole } = ctx;
+
+    try {
+        const productDoc = await fsGet(projectId, accessToken, 'products', productId);
+        const productData = parseFirestoreDoc(productDoc);
+        if (!productDoc || !productData) return json(404, { error: 'Product not found.' });
+        if (!canManageProduct(callerRole, decoded.uid, productData)) {
+            return json(403, { error: 'You do not have permission to delete this product.' });
+        }
+
+        const assetResults = await deleteProductAssets(env, productData);
+        await fsDelete(projectId, accessToken, 'products', productId);
+
+        return json(200, {
+            ok: true,
+            productId,
+            deleted: true,
+            deletedAssets: assetResults,
+        });
+    } catch (e) {
+        console.error('[delete-product]', e);
+        return json(500, { error: e.message || 'Delete product failed.' });
+    }
+}
+
+async function handleDeleteEditedImage(request, env) {
+    if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
+    let payload;
+    try { payload = JSON.parse(await request.text() || '{}'); }
+    catch { return json(400, { error: 'Invalid JSON body.' }); }
+
+    const productId = String(payload.productId || '').trim();
+    if (!productId) return json(400, { error: 'Product id is required.' });
+
+    let ctx;
+    try { ctx = await requireUser(request, env); if (ctx.error) return ctx.error; }
+    catch (e) { return json(401, { error: e.message || 'Invalid session.' }); }
+
+    const { accessToken, decoded, projectId, callerRole } = ctx;
+
+    try {
+        const productDoc = await fsGet(projectId, accessToken, 'products', productId);
+        const productData = parseFirestoreDoc(productDoc);
+        if (!productDoc || !productData) return json(404, { error: 'Product not found.' });
+        if (!canManageProduct(callerRole, decoded.uid, productData)) {
+            return json(403, { error: 'You do not have permission to update this product.' });
+        }
+
+        const originalImageUrl = productData.originalImageUrl || productData.imageUrl || '';
+        if (!productData.editedImageUrl && !productData.editedImagePublicId) {
+            return json(200, { ok: true, productId, deletedAssets: [], updated: false });
+        }
+
+        const assetResults = await deleteProductAssets(env, productData, { editedOnly: true });
+        await fsPatch(projectId, accessToken, 'products', productId, {
+            editedImageUrl: null,
+            editedImagePublicId: null,
+            currentImageUrl: originalImageUrl,
+            imageUrl: originalImageUrl,
+            imageStatus: 'raw',
+            editedBy: null,
+            editedAt: null,
+            updatedAt: { _type: 'timestamp' },
+        });
+
+        return json(200, {
+            ok: true,
+            productId,
+            updated: true,
+            deletedAssets: assetResults,
+        });
+    } catch (e) {
+        console.error('[delete-edited-image]', e);
+        return json(500, { error: e.message || 'Delete edited image failed.' });
+    }
+}
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -348,6 +570,8 @@ export default {
         try {
             if (url.pathname === '/api/delete-user-account') return handleDeleteUser(request, env);
             if (url.pathname === '/api/repair-user-by-email') return handleRepairUser(request, env);
+            if (url.pathname === '/api/delete-product') return handleDeleteProduct(request, env);
+            if (url.pathname === '/api/delete-product-edited-image') return handleDeleteEditedImage(request, env);
             return json(404, { error: 'Not found.' });
         } catch (e) {
             return json(500, { error: e.message || 'Internal server error.' });
