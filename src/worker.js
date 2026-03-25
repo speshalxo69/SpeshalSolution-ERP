@@ -23,7 +23,7 @@ async function getAccessToken(sa) {
         .sign(privateKey);
 
     const body = new URLSearchParams();
-    body.set('grant_type', 'urn:ietf:params:oauth2:grant-type:jwt-bearer');
+    body.set('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
     body.set('assertion', assertion);
     const res = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
