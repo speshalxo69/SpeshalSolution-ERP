@@ -22,10 +22,13 @@ async function getAccessToken(sa) {
         .setExpirationTime(now + 3600)
         .sign(privateKey);
 
+    const body = new URLSearchParams();
+    body.set('grant_type', 'urn:ietf:params:oauth2:grant-type:jwt-bearer');
+    body.set('assertion', assertion);
     const res = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `grant_type=urn%3Aietf%3Aparams%3Aoauth2%3Agrant-type%3Ajwt-bearer&assertion=${assertion}`,
+        body: body.toString(),
     });
     const data = await res.json();
     if (!data.access_token) throw new Error('Failed to get access token: ' + JSON.stringify(data));

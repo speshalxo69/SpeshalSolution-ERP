@@ -1944,41 +1944,13 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
         triggerButton.textContent = 'Checking...';
     }
 
-    const callDeleteFunction = async (payload) => {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch('/api/delete-user-account', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const rawBody = await response.text();
-        let data = {};
-        if (rawBody) {
-            try {
-                data = JSON.parse(rawBody);
-            } catch {
-                data = { error: rawBody };
-            }
-        }
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('Delete User function was not found.');
-            }
-            throw new Error(data.error || `Request failed (${response.status})`);
-        }
-
-        return data;
-    };
-
     try {
-        const inspect = await callDeleteFunction({
+        const inspect = await callWorkerApi('/api/delete-user-account', {
             mode: 'inspect',
             uid: targetUid,
+        }, currentUser, {
+            missingRouteMessage: 'Delete User route was not found. Redeploy the Cloudflare worker and try again.',
+            timeoutMessage: 'Delete request timed out. Check your connection or redeploy the Cloudflare worker.',
         });
 
         const productsCount = inspect.productsCount || 0;
@@ -1995,10 +1967,13 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
             triggerButton.textContent = 'Deleting...';
         }
 
-        const result = await callDeleteFunction({
+        const result = await callWorkerApi('/api/delete-user-account', {
             mode: 'delete',
             uid: targetUid,
             transferToUid: requiresTransfer ? currentUserUid : '',
+        }, currentUser, {
+            missingRouteMessage: 'Delete User route was not found. Redeploy the Cloudflare worker and try again.',
+            timeoutMessage: 'Delete request timed out. Check your connection or redeploy the Cloudflare worker.',
         });
 
         if (adminViewOwnerUid === targetUid) {
@@ -2027,6 +2002,56 @@ async function deleteUserAccount(targetUid, targetData = {}, triggerButton = nul
             triggerButton.disabled = false;
             triggerButton.textContent = originalText || 'Delete';
         }
+    }
+}
+
+async function callWorkerApi(path, payload, currentUser, options = {}) {
+    const {
+        timeoutMs = 15000,
+        missingRouteMessage = 'This worker route was not found.',
+        timeoutMessage = 'The request timed out.',
+    } = options;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch(path, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+        });
+
+        const rawBody = await response.text();
+        let data = {};
+        if (rawBody) {
+            try {
+                data = JSON.parse(rawBody);
+            } catch {
+                data = { error: rawBody };
+            }
+        }
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error(missingRouteMessage);
+            }
+            throw new Error(data.error || `Request failed (${response.status})`);
+        }
+
+        return data;
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            throw new Error(timeoutMessage);
+        }
+        throw err;
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
@@ -2109,40 +2134,14 @@ async function repairUserByEmail() {
     button.textContent = 'Repairing...';
     setRepairMessage('Contacting repair service...', 'info');
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
     try {
-        const idToken = await currentUser.getIdToken();
-        const response = await fetch('/api/repair-user-by-email', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ email, role }),
-            signal: controller.signal,
+        const data = await callWorkerApi('/api/repair-user-by-email', {
+            email,
+            role,
+        }, currentUser, {
+            missingRouteMessage: 'Repair User route was not found. Redeploy the Cloudflare worker and try again.',
+            timeoutMessage: 'Repair request timed out. Check your connection or redeploy the Cloudflare worker.',
         });
-
-        const rawBody = await response.text();
-        let data = {};
-        if (rawBody) {
-            try {
-                data = JSON.parse(rawBody);
-            } catch {
-                data = { error: rawBody };
-            }
-        }
-
-        if (!response.ok) {
-            if (response.status === 501) {
-                throw new Error('Repair User needs the deployed Netlify function. The local preview server cannot run serverless functions.');
-            }
-            if (response.status === 404) {
-                throw new Error('Repair User function was not found. Deploy the Netlify function first.');
-            }
-            throw new Error(data.error || `Request failed (${response.status})`);
-        }
 
         emailInput.value = '';
         roleSelect.value = 'client';
@@ -2158,13 +2157,10 @@ async function repairUserByEmail() {
         loadUserList();
     } catch (err) {
         console.error('[RepairUser]', err);
-        const message = err?.name === 'AbortError'
-            ? 'Repair request timed out. Check your connection or the deployed function.'
-            : (err?.message || 'Repair request failed.');
+        const message = err?.message || 'Repair request failed.';
         setRepairMessage(message);
         alert(message);
     } finally {
-        clearTimeout(timeoutId);
         button.disabled = false;
         button.textContent = 'Repair User';
     }
